@@ -1,0 +1,2 @@
+Practica 2 de la asignauta Sistemas Operativos I.
+Se trata de crear un mini Shell que simula el funcionamiento del Bash.
