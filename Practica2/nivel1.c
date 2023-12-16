@@ -38,9 +38,7 @@ int internal_bg(char **args);
  * @return 0 
  *******************************************************************************/
 int main() {
-char line[COMMAND_LINE_SIZE];
-char *args [COMMAND_LINE_SIZE];
-    
+char line[COMMAND_LINE_SIZE];    
     while (1) {
         if (read_line(line)) {
             execute_line(line);
