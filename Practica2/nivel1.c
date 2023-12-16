@@ -38,7 +38,8 @@ int internal_bg(char **args);
  * @return 0 
  *******************************************************************************/
 int main() {
-char line[COMMAND_LINE_SIZE];    
+char line[COMMAND_LINE_SIZE];
+    
     while (1) {
         if (read_line(line)) {
             execute_line(line);
@@ -78,6 +79,8 @@ char *read_line(char *line) {
         if (line[length-1] == '\n') {
             line[length-1] = '\0';
         }
+         return line;
+    
     }else{
          printf("\r");//retorno de carro
         if (feof(stdin)){
@@ -86,9 +89,12 @@ char *read_line(char *line) {
         printf("\nAdiós!\n");
         #endif
         exit(EXIT_SUCCESS);
-        }  
-        return line;
-    }
+        }else{
+            fprintf(stderr,ROJO_T"Error al leer la linea"RESET);
+            exit(EXIT_FAILURE);
+        }
+    }  
+       
      
 }
 /*!*****************************************************************************
@@ -150,8 +156,9 @@ int check_internal(char **args){
    int internal = 0;
   
     if (strcmp(args[0], "cd") == 0){
-        internal=1;
         internal_cd(args);
+                internal=1;
+
     }
     else if (strcmp(args[0], "export") == 0)
     {
