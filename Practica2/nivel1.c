@@ -55,8 +55,7 @@ char *args [COMMAND_LINE_SIZE];
 /*!*****************************************************************************
  * @brief Imprime el prompt de nuestro shell.
  * Utiliza USER para obtener el nombre de usuario.
- * Y getcwd para el directorio.
- * de trabajo actual.
+ * Y getcwd para el directorio de trabajo actual.
  *******************************************************************************/
 void imprimir_prompt() {
     char *user = getenv("USER");
@@ -67,8 +66,9 @@ void imprimir_prompt() {
 
 /*!*****************************************************************************
  * @brief Función para leer una línea desde la consola.
- * Remplaza '\n' con '\0' al final y maneja 
- * Si n
+ * Remplaza '\n' con '\0' al final y maneja el caso de Ctrl+D. 
+ * @param line   linea de comandos
+ * @return  puntero a la linea
  *******************************************************************************/
 char *read_line(char *line) {
     imprimir_prompt();
@@ -96,6 +96,7 @@ char *read_line(char *line) {
 /*!*****************************************************************************
  * @brief Ejecuta la linea de comando. 
  @param line : linea a ejecutar
+ @return 0
  *******************************************************************************/
 
 int execute_line(char *line) {
@@ -107,11 +108,11 @@ int execute_line(char *line) {
 }
 
 /*!*****************************************************************************
- * @brief Trocea la línea(line) en tokens y los guarda en args.
+ * @brief Trocea la línea de comando en tokens y los guarda en args.
  *Ignora los comentarios, y el ultimo token lo pone a NULL. 
  *@param line   linea de comando a trocear
  *@param args   Lista para guardar los argumentos 
- *@return numero de tokens sin contar el NULL
+ *@return número de tokens sin contar el NULL
  *******************************************************************************/
 
 int parse_args(char **args, char *line) {
@@ -141,7 +142,7 @@ int parse_args(char **args, char *line) {
 
 /*!*****************************************************************************
  * @brief Comprueba si args[0] es comando interno o externo.
- * En comandos internos llama a la función que le corresponde.
+ * En los comandos internos llama a la función que le corresponde.
  * @param args  lista de argumentos 
  * @return 1 si el comando es interno. O en caso contrario.
  *******************************************************************************/
@@ -206,7 +207,7 @@ int internal_cd(char **args){
 }
 
 /*!*****************************************************************************
- * @brief asignar valores a variablescd de entorno.
+ * @brief Asigna valores a variablescd de entorno.
  * En este nivel, la función simplemente imprime su funcionamiento.
  * @param args Lista de argumentos (actualmente no utilizada).
  * @return 0
@@ -234,7 +235,7 @@ int internal_source(char **args){
 }
 
 /*!*****************************************************************************
- * @brief muestra el PID de procesos en background(segundo plano)
+ * @brief Muestra el PID de procesos en background(segundo plano)
  * En este nivel, la función simplemente imprime su funcionamiento.
  * @param args Lista de argumentos (actualmente no utilizada).
  * @return 0
@@ -248,7 +249,7 @@ int internal_jobs(char **args){
 }
 
 /*!*****************************************************************************
- * @brief envia a segundo plano el trabajo indicado con su indice
+ * @brief Envia a segundo plano el trabajo indicado con su índice.
  * En este nivel, la función simplemente imprime su funcionamiento.
  * @param args Lista de argumentos (actualmente no utilizada).
  * @return 0
@@ -256,13 +257,13 @@ int internal_jobs(char **args){
 
 int internal_bg(char **args){
    #if DEBUGN1 
-   printf(GRIS_T"[internal_bg() →  Esta función envia a segundo plano el trabajo indicado con su indice"RESET);
+   printf(GRIS_T"[internal_bg() →  Esta función envia a segundo plano el trabajo indicado con su Índice"RESET);
    #endif
     return 0; 
 }
 
 /*!*****************************************************************************
- * @brief envia a primer plano el trabajo indicado con su indice
+ * @brief Envia a primer plano el trabajo indicado con su índice.
  * En este nivel, la función simplemente imprime su funcionamiento.
  * @param args Lista de argumentos (actualmente no utilizada).
  * @return 0
@@ -270,7 +271,7 @@ int internal_bg(char **args){
 
 int internal_fg(char **args){
    #if DEBUGN1
-   printf(GRIS_T"[internal_fg() →  Esta función envia a primer plano el trabajo indicado con su indice"RESET);
+   printf(GRIS_T"[internal_fg() →  Esta función envia a primer plano el trabajo indicado con su índice"RESET);
    #endif
     return 0; 
 }
