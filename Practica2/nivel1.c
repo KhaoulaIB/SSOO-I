@@ -1,0 +1,281 @@
+#define _POSIX_C_SOURCE 200112L
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#define PROMPT "$ "
+#define COMMAND_LINE_SIZE 1024
+#define ARGS_SIZE 64
+#define DEBUGN1 1
+#define RESET "\033[0m"
+#define NEGRO_T "\x1b[30m"
+#define NEGRO_F "\x1b[40m"
+#define GRIS_T "\x1b[90m"
+#define ROJO_T "\x1b[31m"
+#define VERDE_T "\x1b[32m"
+#define AMARILLO_T "\x1b[33m"
+#define AZUL_T "\x1b[34m"
+#define MAGENTA_T "\x1b[35m"
+#define CYAN_T "\x1b[36m"
+#define BLANCO_T "\x1b[97m"
+#define NEGRITA "\x1b[1m"
+
+char *read_line(char *line);
+int execute_line(char *line);
+int parse_args(char **args, char *line);
+int check_internal(char **args);
+
+int internal_cd(char **args);
+int internal_export(char **args);
+int internal_source(char **args);
+int internal_jobs(char **args);
+int internal_fg(char **args);
+int internal_bg(char **args);
+
+/*!*****************************************************************************
+ * @brief El main de nuesto shell
+ * lea las lineas de comando y las ejecuta.
+ * @return 0 
+ *******************************************************************************/
+int main() {
+char line[COMMAND_LINE_SIZE];
+char *args [COMMAND_LINE_SIZE];
+    
+    while (1) {
+        if (read_line(line)) {
+            execute_line(line);
+         
+        }
+    }
+    
+    return 0;
+
+}
+
+/*!*****************************************************************************
+ * @brief Imprime el prompt de nuestro shell.
+ * Utiliza USER para obtener el nombre de usuario.
+ * Y getcwd para el directorio.
+ * de trabajo actual.
+ *******************************************************************************/
+void imprimir_prompt() {
+    char *user = getenv("USER");
+    char *pwd = getcwd(NULL, 0);
+    printf(ROJO_T NEGRITA "%s" RESET ":" AMARILLO_T NEGRITA "%s" RESET NEGRITA "%s" RESET , user,pwd,PROMPT);
+    free(pwd);
+}
+
+/*!*****************************************************************************
+ * @brief Función para leer una línea desde la consola.
+ * Remplaza '\n' con '\0' al final y maneja 
+ * Si n
+ *******************************************************************************/
+char *read_line(char *line) {
+    imprimir_prompt();
+    fflush(stdout);
+    sleep(0.5); // Esperar 0.5 segundos
+    if (fgets(line, COMMAND_LINE_SIZE, stdin) != NULL) {
+       size_t length = strlen(line);
+    // Reemplazar el carácter '\n' por '\0'
+        if (line[length-1] == '\n') {
+            line[length-1] = '\0';
+        }
+    }else{
+         printf("\r");//retorno de carro
+        if (feof(stdin)){
+        // Ctrl+D fue presionado
+        #if DEBUGN1
+        printf("\nAdiós!\n");
+        #endif
+        exit(EXIT_SUCCESS);
+        }  
+        return line;
+    }
+     
+}
+/*!*****************************************************************************
+ * @brief Ejecuta la linea de comando. 
+ @param line : linea a ejecutar
+ *******************************************************************************/
+
+int execute_line(char *line) {
+    char *args[ARGS_SIZE];
+    if (parse_args(args, line) > 0) {    //parsea la línea en argumentos
+        check_internal(args);
+    }
+    return 0;
+}
+
+/*!*****************************************************************************
+ * @brief Trocea la línea(line) en tokens y los guarda en args.
+ *Ignora los comentarios, y el ultimo token lo pone a NULL. 
+ *@param line   linea de comando a trocear
+ *@param args   Lista para guardar los argumentos 
+ *@return numero de tokens sin contar el NULL
+ *******************************************************************************/
+
+int parse_args(char **args, char *line) {
+    int numTokens = 0;
+
+    args[numTokens] = strtok(line, " \t\n\r");
+#if DEBUGN1
+    fprintf(stderr, GRIS_T "[parse_args()→ token %i: %s]\n" RESET , numTokens, args[numTokens]);
+#endif
+    while (args[numTokens] && args[numTokens][0] != '#')
+    { //troceamos hasta llegar a un comentario (procedido por #)
+        numTokens++;
+        args[numTokens] = strtok(NULL, " \t\n\r");
+#if DEBUGN1
+        fprintf(stderr,  GRIS_T "[parse_args()→ token %i: %s]\n" RESET , numTokens, args[numTokens]);
+#endif
+    }
+    if (args[numTokens])
+    {
+        args[numTokens] = NULL; // por si el último token es el símbolo comentario
+#if DEBUGN1
+        fprintf(stderr,  GRIS_T"[parse_args()→ token %i corregido: %s]\n" RESET, numTokens, args[numTokens]);
+#endif
+    }
+    return numTokens;
+}
+
+/*!*****************************************************************************
+ * @brief Comprueba si args[0] es comando interno o externo.
+ * En comandos internos llama a la función que le corresponde.
+ * @param args  lista de argumentos 
+ * @return 1 si el comando es interno. O en caso contrario.
+ *******************************************************************************/
+
+
+int check_internal(char **args){
+   int internal = 0;
+  
+    if (strcmp(args[0], "cd") == 0){
+        internal=1;
+        internal_cd(args);
+    }
+    else if (strcmp(args[0], "export") == 0)
+    {
+        internal_export(args);
+        internal=1;
+    }
+    else if (strcmp(args[0], "source") == 0)
+    {
+        internal_source(args);
+        internal=1;
+    }
+    else if (strcmp(args[0], "jobs") == 0)
+    {
+        internal_jobs(args);
+        internal=1;
+    }
+    else if (strcmp(args[0], "fg") == 0)
+    {
+        internal_fg(args);
+        internal=1;
+    }
+    else if (strcmp(args[0], "bg") == 0)
+    {
+        internal_bg(args);
+        internal=1;
+    }
+    else if (strcmp(args[0], "exit") == 0){
+        #if DEBUGN1
+        printf("\n Bye Bye\n");
+        #endif
+        internal=1;
+        exit(0);
+    }
+
+    return internal;
+
+}
+
+/*!*****************************************************************************
+ * @brief Cambia el directorio de trabajo.
+ * En este nivel, la función simplemente imprime que cambiará de directorio.
+ * @param args Lista de argumentos (actualmente no utilizada).
+ * @return 0
+ *******************************************************************************/
+
+int internal_cd(char **args){
+    #if DEBUGN1
+    printf(GRIS_T"[internal_cd() → Esta función cambiará de directorio]\n"RESET);
+    #endif
+    return 0;
+}
+
+/*!*****************************************************************************
+ * @brief asignar valores a variablescd de entorno.
+ * En este nivel, la función simplemente imprime su funcionamiento.
+ * @param args Lista de argumentos (actualmente no utilizada).
+ * @return 0
+ *******************************************************************************/
+
+int internal_export(char **args){
+    #if DEBUGN1
+    printf(GRIS_T"[internal_export() → Esta función asignará valores a variablescd de entorno]\n"RESET);
+    #endif
+    return 0;
+}
+
+/*!*****************************************************************************
+ * @brief Ejecuta un fichero de líneas de comandos.
+ * En este nivel, la función simplemente imprime su funcionamiento.
+ * @param args Lista de argumentos (actualmente no utilizada).
+ * @return 0
+ *******************************************************************************/
+
+int internal_source(char **args){
+    #if DEBUGN1
+    printf(GRIS_T"[internal_source() → Esta función ejecutará un fichero de líneas de comandos]\n"RESET);
+    #endif
+    return 0;
+}
+
+/*!*****************************************************************************
+ * @brief muestra el PID de procesos en background(segundo plano)
+ * En este nivel, la función simplemente imprime su funcionamiento.
+ * @param args Lista de argumentos (actualmente no utilizada).
+ * @return 0
+ *******************************************************************************/
+
+int internal_jobs(char **args){
+    #if DEBUGN1
+    printf(GRIS_T"[internal_jobs() → Esta función mostrará el PID de los procesos que no estén en foreground]\n"RESET);
+    #endif
+    return 0;
+}
+
+/*!*****************************************************************************
+ * @brief envia a segundo plano el trabajo indicado con su indice
+ * En este nivel, la función simplemente imprime su funcionamiento.
+ * @param args Lista de argumentos (actualmente no utilizada).
+ * @return 0
+ *******************************************************************************/
+
+int internal_bg(char **args){
+   #if DEBUGN1 
+   printf(GRIS_T"[internal_bg() →  Esta función envia a segundo plano el trabajo indicado con su indice"RESET);
+   #endif
+    return 0; 
+}
+
+/*!*****************************************************************************
+ * @brief envia a primer plano el trabajo indicado con su indice
+ * En este nivel, la función simplemente imprime su funcionamiento.
+ * @param args Lista de argumentos (actualmente no utilizada).
+ * @return 0
+ *******************************************************************************/
+
+int internal_fg(char **args){
+   #if DEBUGN1
+   printf(GRIS_T"[internal_fg() →  Esta función envia a primer plano el trabajo indicado con su indice"RESET);
+   #endif
+    return 0; 
+}
+
+
+
+
+
