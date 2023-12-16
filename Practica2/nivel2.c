@@ -106,7 +106,6 @@ char *read_line(char *line) {
             exit(EXIT_FAILURE);
         }
     }  
-       
      
 }
 
@@ -295,7 +294,6 @@ int internal_export(char **args) {
     valor[valor_length] = '\0'; 
 
 
-
     #if DEBUGN2
     fprintf(stderr,GRIS_T"[internal_export()→ nombre: %s]\n"RESET,nombre);
     fprintf(stderr,GRIS_T"[internal_export()→ valor: %s]\n"RESET,valor);
@@ -312,6 +310,8 @@ int internal_export(char **args) {
     #endif
     return EXIT_SUCCESS;
 }
+
+
 
 
 
