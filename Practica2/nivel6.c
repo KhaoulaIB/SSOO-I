@@ -85,7 +85,11 @@ void initialize_jobs(){
     jobs_list[0].estado = 'N';
     memset(jobs_list[0].cmd, '\0', COMMAND_LINE_SIZE);
 }
-
+/*!*****************************************************************************
+ * @brief El main de nuesto shell
+ * lea las lineas de comando y las ejecuta.
+ * @return 0 
+ *******************************************************************************/
 int main(int argc, char *argv[]) {
 
 char line[COMMAND_LINE_SIZE];
@@ -107,6 +111,12 @@ char line[COMMAND_LINE_SIZE];
 }
 
 
+/*!*****************************************************************************
+ * @brief Imprime el prompt de nuestro shell.
+ * Utiliza USER para obtener el nombre de usuario.
+ * Y getcwd para el directorio de trabajo actual.
+ *******************************************************************************/
+
 void imprimir_prompt() {
     char *user = getenv("USER");
     char *pwd = getcwd(NULL, 0);
@@ -115,6 +125,12 @@ void imprimir_prompt() {
 
 }
 
+/*!*****************************************************************************
+ * @brief Función para leer una línea desde la consola.
+ * Remplaza '\n' con '\0' al final y maneja el caso de Ctrl+D. 
+ * @param line   linea de comandos
+ * @return  puntero a la linea
+ *******************************************************************************/
 char *read_line(char *line) {
     imprimir_prompt();
     fflush(stdout);
@@ -227,6 +243,16 @@ int execute_line(char *line) {
     return EXIT_SUCCESS;
 }
 
+/*!*****************************************************************************
+ * @brief Cambia el directorio de trabajo.
+ *Se tractan 3 casos 
+ * cd → se traslada a HOME.
+ * cd + argumento → se traslada al directorio
+ * cd + argumentos→se obteniene la ruta completa. 
+ * @param args Lista de argumentos 
+ * @return 0 si el cambio fue correcto. 1 en otro caso.
+ *******************************************************************************/
+
 int internal_cd(char **args) {
     char *home_dir = getenv("HOME");
     char *target_dir;
@@ -290,7 +316,12 @@ int internal_cd(char **args) {
     return EXIT_SUCCESS;
 }
 
-
+/*!*****************************************************************************
+ * @brief Borra el caracter c de la palabra.
+ *@param palabra palabra a tractar   
+ *@param  c caracter a borrar de la palabra  
+ *
+ *******************************************************************************/
 void BorrarChar(char * args, char c){
     int index = 0;
     int tmp = 0;
@@ -307,6 +338,13 @@ void BorrarChar(char * args, char c){
 }
 
 
+ /*!*****************************************************************************
+ * @brief Asigna valores a variablescd de entorno.
+ * Obtiene el nombre de la variable y su valor y hace la asignación.
+ * Se hace control de errores de sintaxis y de asignación.
+ * @param args Lista de argumentos 
+ * @return  0 si la asignación fue exsitosa. 1 en caso contario.
+ *******************************************************************************/
 
 int internal_export(char **args) {
 
@@ -361,6 +399,11 @@ int internal_export(char **args) {
 
 
 
+/*!*****************************************************************************
+ * @brief Ejecuta un fichero de líneas de comandos.
+ * @param args Lista de argumentos 
+ * @return 0 en caso de succeso.
+ *******************************************************************************/
 
 int internal_source(char **args){
     #if DEBUGN1
@@ -402,6 +445,14 @@ int internal_source(char **args){
     return EXIT_SUCCESS;
 }
 
+ /*!*****************************************************************************
+ * @brief Trocea la línea de comando en tokens y los guarda en args.
+ *Ignora los comentarios, y el ultimo token lo pone a NULL. 
+ *@param line   linea de comando a trocear
+ *@param args   Lista para guardar los argumentos 
+ *@return número de tokens sin contar el NULL
+ *******************************************************************************/
+
 int parse_args(char **args, char *line)
 {
     int numTokens = 0;
@@ -430,6 +481,12 @@ int parse_args(char **args, char *line)
     return numTokens;
 }
 
+*!*****************************************************************************
+ * @brief Comprueba si args[0] es comando interno o externo.
+ * En los comandos internos llama a la función que le corresponde.
+ * @param args  lista de argumentos 
+ * @return 1 si el comando es interno. O en caso contrario.
+ *******************************************************************************/
 
 int check_internal(char **args){
    int internal = 0;
@@ -538,6 +595,12 @@ int is_output_redirection(char **args) {
         }
 }*/
 
+/*!*****************************************************************************
+ * @brief Envia a segundo plano el trabajo indicado con su índice.
+ * @param args Lista de argumentos 
+ * @return 0 si el proceso fue exitoso. 1 en caso contrario.
+ *******************************************************************************/
+
 int internal_bg(char **args){
     if(args[1] == NULL){
         fprintf(stderr, ROJO_T "Uso: bg <número de trabajo>\n" RESET);
@@ -565,6 +628,12 @@ int internal_bg(char **args){
     
     return EXIT_SUCCESS;
 }
+
+/*!*****************************************************************************
+ * @brief Envia a primer plano el trabajo indicado con su índice.
+ * @param args Lista de argumentos
+ * @return 0 si el proceso fue exitoso. 1 en caso contrario.
+ *******************************************************************************/
 
 int internal_fg(char **args){
    #if DEBUGN1
@@ -614,6 +683,12 @@ int internal_fg(char **args){
    
 }
 
+/*!*****************************************************************************
+ * @brief Manejador propio para la señal SIGINT (Ctrl+C) 
+ *Si es un comando externo lo ejecuta un proceso hijo.
+ *@param line : linea a ejecutar
+ *@return 0
+ *******************************************************************************/
 
 void ctrlc(int signum) {
     signal(SIGINT,ctrlc);
@@ -645,12 +720,14 @@ void ctrlc(int signum) {
     fflush(stdout);
     
 }
-//----------------------funciones del nivel 5---------------------
 
+/*!*****************************************************************************
+ * @brief Función que maneja la terminación de procesos hijos. 
+ *Si es un comando externo lo ejecuta un proceso hijo.
+ *@param line : linea a ejecutar
+ *@return 0
+ *******************************************************************************/
 
-
-
-// Función que maneja la terminación de procesos hijos
 void reaper(int signum){
     signal(SIGCHLD, reaper);
     pid_t ended;
@@ -705,6 +782,11 @@ void reaper(int signum){
 }
 
 
+/*!*****************************************************************************
+ * @brief Muestra el PID de procesos en background(segundo plano)
+ * @param args Lista de argumentos (actualmente no utilizada).
+ * @return 0
+ *******************************************************************************/
 
 int internal_jobs(char **args) {
 
