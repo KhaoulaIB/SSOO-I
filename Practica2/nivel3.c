@@ -6,10 +6,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
-//longitud inicial del buffer
-#define INITIAL_LINE_LENGTH 128 
-//factor de multiplicación del buffer (si es necesaria más memoria)
-#define LINE_GROWTH_FACTOR 2
 #define PROMPT "$ "
 #define COMMAND_LINE_SIZE 1024
 #define ARGS_SIZE 64
