@@ -60,8 +60,6 @@ char line[COMMAND_LINE_SIZE];
 }
 
 
-
-
 /*!*****************************************************************************
  * @brief Imprime el prompt de nuestro shell.
  * Utiliza USER para obtener el nombre de usuario.
@@ -85,28 +83,22 @@ char *read_line(char *line) {
     imprimir_prompt();
     fflush(stdout);
     sleep(0.5); // Esperar 0.5 segundos
-    if (fgets(line, COMMAND_LINE_SIZE, stdin) != NULL) {
-       size_t length = strlen(line);
-    // Reemplazar el carácter '\n' por '\0'
-        if (line[length-1] == '\n') {
-            line[length-1] = '\0';
-        }
-         return line;
-    
-    }else{
-         printf("\r");//retorno de carro
+    if (fgets(line, COMMAND_LINE_SIZE, stdin) == NULL) {
+        printf("\r");
         if (feof(stdin)){
         // Ctrl+D fue presionado
-        #if DEBUGN1
+        #if DEBUGN3
         printf("\nAdiós!\n");
         #endif
         exit(EXIT_SUCCESS);
-        }else{
-            fprintf(stderr,ROJO_T"Error al leer la linea"RESET);
-            exit(EXIT_FAILURE);
+        }  
+    }
+        // Reemplazar el carácter '\n' por '\0'
+     size_t length = strlen(line);
+        if (line[length-1] == '\n') {
+            line[length-1] = '\0';
         }
-    }  
-     
+            return line;
 }
 
 
