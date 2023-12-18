@@ -724,33 +724,26 @@ void ctrlc(int signum) {
 /*!*****************************************************************************
  * @brief Función que maneja la terminación de procesos hijos. 
  *Si es un comando externo lo ejecuta un proceso hijo.
- *@param line : linea a ejecutar
- *@return 0
+ *@param signum número de la señal
  *******************************************************************************/
-
 void reaper(int signum){
     signal(SIGCHLD, reaper);
     pid_t ended;
     int status;
-   
-
     char mensaje[1200];
     while ((ended = waitpid(-1, &status, WNOHANG)) > 0){
         if (ended == jobs_list[0].pid) { // si el proceso esta en foreground
-            //proceso finalizado solo
-            if (WIFEXITED(status)){
-                #if DEBUGN4
+            #if DEBUGN4
+            if (WIFEXITED(status)){     //proceso finalizado solo
                 sprintf(mensaje,GRIS_T "[reaper()→ Proceso hijo %d (%s) finalizado con exit code %d]\n"RESET, ended, jobs_list[0].cmd, WEXITSTATUS(status));
             write(2, mensaje, strlen(mensaje)); //2 es el flujo stderr
-                #endif
                 //Proceso finalizado debido a una señal
                 }else if (WIFSIGNALED(status)){
-                #if DEBUGN5
             printf(GRIS_T"[reaper()→ recibida señal 17 (SIGCHLD)]\n"RESET);
-            sprintf(mensaje,GRIS_T "[reaper()→ Proceso hijo %d (%s) finalizado con exit code %d]\n"RESET, ended, jobs_list[0].cmd, WTERMSIG(status));
-            write(2, mensaje, strlen(mensaje)); //2 es el flujo stderr
-            #endif
+            sprintf(mensaje,GRIS_T "[reaper()→ Proceso hijo %d (%s) finalizado por señal %d]\n"RESET, ended, jobs_list[0].cmd, WTERMSIG(status));
+            write(2, mensaje, strlen(mensaje)); 
             }
+            #endif
             //rastreamos los datos de jobs_list[0]
             memset(jobs_list[0].cmd, '\0', COMMAND_LINE_SIZE);
             jobs_list[0].pid = 0;
@@ -758,28 +751,31 @@ void reaper(int signum){
       
         }else if (ended>0){//proceso en background
            int index = jobs_list_find(ended);
+            #if DEBUGN4
          if (WIFEXITED(status)){
-                #if DEBUGN4
-                sprintf(mensaje,GRIS_T "\n[reaper()→ Proceso hijo %d (%s) en background finalizado con exit code %d]\n"RESET, ended, jobs_list[index].cmd, WEXITSTATUS(status));
-            write(2, mensaje, strlen(mensaje)); //2 es el flujo stderr
-                #endif
+            sprintf(mensaje,GRIS_T "\n[reaper()→ Proceso hijo %d (%s) en background finalizado con exit code %d]\n"RESET, ended, jobs_list[index].cmd, WEXITSTATUS(status));
+            write(2, mensaje, strlen(mensaje)); 
                 //si ha finalizado debido a una señal
                 }else if (WIFSIGNALED(status)){
-                #if DEBUGN5
-            sprintf(mensaje,GRIS_T "[reaper()→ Proceso hijo %d (%s) en background finalizado con exit code %d]\n"RESET, ended, jobs_list[index].cmd, WTERMSIG(status));
-            write(2, mensaje, strlen(mensaje)); //2 es el flujo stderr
-            #endif
+            sprintf(mensaje,GRIS_T "[reaper()→ Proceso hijo %d (%s) en background finalizadopor señal %d]\n"RESET, ended, jobs_list[index].cmd, WTERMSIG(status));
+            write(2, mensaje, strlen(mensaje)); 
             }
-            printf("Proceso en background con PID %d ha terminado.\n", ended);  
-            printf("Proceso finalizado con PID %d (%s) en jobs_list[%d] con status %d\n", ended, jobs_list[index].cmd, index, status);
-  
+
+            sprintf(mensaje, "Terminado PID %d (%s) en jobs_list[%d] con status %d\n", ended, jobs_list[index].cmd, index, status);
+            write(2, mensaje, strlen(mensaje)); 
+           // fprintf("Proceso en background con PID %d ha terminado.\n", ended);  
+           // printf("Terminado PID %d (%s) en jobs_list[%d] con status %d\n", ended, jobs_list[index].cmd, index, status);
+            #endif
+
             jobs_list_remove(index);
         }else if (ended == -1){
             perror("Error");
+            
         }
          fflush(stdout);
     }
 }
+
 
 
 /*!*****************************************************************************
@@ -805,37 +801,49 @@ int internal_jobs(char **args) {
 
 
   
+ /*!*****************************************************************************
+ * @brief manejador proprio de la señal SIGTSTP.
+ * @param signum : número de señal que recibe 
+ *******************************************************************************/
 
 void ctrlz(int signum) {
     //asociamos de nuevo la señal al manejador ctrlz
     signal(SIGTSTP,ctrlz);
-
+    char msg [3000];    
     pid_t foreground_pid = jobs_list[0].pid;
     #if DEBUGN4
-    printf(GRIS_T "\n[ctrlz()→ Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]\n" RESET,
+    fprintf(stderr, GRIS_T"\n[ctrlz()→ Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]\n" RESET,
     getpid(), mi_shell, foreground_pid, jobs_list[0].cmd);
-    printf(GRIS_T"\n[ctrlz()→ recibida señal 20 (SIGTSTP)]\n"RESET);
     #endif
+    fprintf(stderr,GRIS_T"[ctrlz()→ recibida señal 20 (SIGTSTP)]\n"RESET);
 
+            
     if (foreground_pid > 0) {
         if (strcmp(jobs_list[0].cmd,mi_shell)!=0){//no es nuestra shell
          kill(foreground_pid, SIGSTOP);
             #if DEBUGN4
-            printf(GRIS_T "[ctrlz()→ Señal %d enviada a %d (%s) por %d (%s)]\n" RESET, SIGSTOP, foreground_pid, jobs_list[0].cmd, getpid(), mi_shell);
+            sprintf(msg,GRIS_T "[ctrlz()→ Señal %d enviada a %d (%s) por %d (%s)]\n" RESET, SIGSTOP, foreground_pid, jobs_list[0].cmd, getpid(), mi_shell);
+            write(2, msg, strlen(msg)); 
+           // printf(GRIS_T "[ctrlz()→ Señal %d enviada a %d (%s) por %d (%s)]\n" RESET, SIGSTOP, foreground_pid, jobs_list[0].cmd, getpid(), mi_shell);
             #endif
             jobs_list[0].estado = 'D';
             jobs_list_add(foreground_pid, 'D', jobs_list[0].cmd);
-            printf("\n[%i] %i \t%c \t%s \n",BACKGROUND , jobs_list[0].pid, jobs_list[0].estado, jobs_list[0].cmd);
+            printf("[%i] %i \t%c \t%s \n", BACKGROUND, jobs_list[0].pid, jobs_list[0].estado, jobs_list[0].cmd);
             BACKGROUND++;
            //rastrear los datos de jobs_list[0]
             memset(jobs_list[0].cmd, '\0', COMMAND_LINE_SIZE);
             jobs_list[0].pid = 0;
             jobs_list[0].estado = 'F';
         } else {
-            fprintf(stderr,GRIS_T"[ctrlz()→ Señal %i no enviada por %d (%s) debido a que el proceso en foreground es el shell]\n" RESET, SIGSTOP, getpid(), mi_shell);                
+
+            sprintf(msg,GRIS_T "[ctrlz()→ Señal %i no enviada por %d (%s) debido a que su proceso en foreground es el shell]\n"RESET,  SIGSTOP, getpid(), mi_shell);
+            write(2, msg, strlen(msg)); 
+            //fprintf(stderr,GRIS_T"[ctrlz()→ Señal %i no enviada por %d (%s) debido a que el proceso en foreground es el shell]\n" RESET, SIGSTOP, getpid(), mi_shell);                
         }
     } else {
-        fprintf(stderr, GRIS_T "[ctrlz()→ Señal %d no enviada por %d (%s) debido a que no hay proceso en foreground]\n" RESET, SIGSTOP, getpid(), mi_shell);
+         sprintf(msg,GRIS_T "[ctrlz()→ Señal %d no enviada por %d (%s) debido a que no hay proceso en foreground]\n" RESET,  SIGSTOP, getpid(), mi_shell);
+            write(2, msg, strlen(msg)); 
+       // fprintf(stderr, GRIS_T "[ctrlz()→ Señal %d no enviada por %d (%s) debido a que no hay proceso en foreground]\n" RESET, SIGSTOP, getpid(), mi_shell);
     }
 
     printf("\n");
@@ -843,7 +851,11 @@ void ctrlz(int signum) {
 }
 
 
-
+/*!*****************************************************************************
+ * @brief Función que determina si un proceso es de primer plano.
+ * @param   args    lista de argumentos
+ * @return TRUE(1) si el proceso es de segundo plano. 
+*******************************************************************************/
 
 int is_background(char **args) {
     for (int i = 0; args[i] != NULL; i++) {
@@ -856,9 +868,12 @@ int is_background(char **args) {
 }
 
 
-/*
-Busca el proceso a partir de su pid, y devuelve su posición.Si no esta en la lista, devuelve -1.
-*/
+
+/*!*****************************************************************************
+ * @brief Busca el proceso a partir de su pid y devuelve su posición.
+ * @param   pid  el pid del proceso a buscar
+ * @return  devuelve el indice del proceso o -1 si no lo encuentra.
+*******************************************************************************/
 int jobs_list_find(pid_t pid){
         for (int i =1; i<=n_job; i++){
             if (jobs_list[i].pid==pid){
@@ -871,6 +886,13 @@ int jobs_list_find(pid_t pid){
 
 }
 
+/*!*****************************************************************************
+ * @brief Añade un nuevo proceso a jobs_list[].
+ * @param   pid  el pid del proceso a buscar
+ * @param   estado  estado del proceso
+ * @param   cmd    comando del proceso   
+ * @return TRUE si la agregación del proceso fue correcta. 
+*******************************************************************************/
 int jobs_list_add(pid_t pid, char estado, char *cmd){
     if(n_job<N_JOBS){//no hemos llegado al maximo ed Numero de Jobs permitidos
     n_job++;
@@ -886,6 +908,12 @@ int jobs_list_add(pid_t pid, char estado, char *cmd){
 
 }
 
+/*!*****************************************************************************
+ * @brief Elimina un proceso de jobs_list[].
+ * Mueve el ultimo proceso a la posicion del proceso a eliminar.
+ * @param   pos indice del proceso a eliminar 
+ * @return TRUE si la eliminación fue exsitosa.
+*******************************************************************************/
 int  jobs_list_remove(int pos){
     if (pos<N_JOBS && pos>0 ){  //porque solo se sale del shell por ctrlz
     
@@ -905,11 +933,14 @@ int  jobs_list_remove(int pos){
     }else {
 
        
-    fprintf(stderr,"Posición incorrecta!. No se ha eliminado ningúno proceso");
+    fprintf(stderr,ROJO_T"Posición incorrecta!. No se ha eliminado ningúno proceso"RESET);
     return FALSE;
     
     }
 }
+
+
+ 
 
 
  
