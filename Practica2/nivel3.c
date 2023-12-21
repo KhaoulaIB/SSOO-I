@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#define delimitadores " \t\n\r"
+
 #define PROMPT "$ "
 #define COMMAND_LINE_SIZE 1024
 #define ARGS_SIZE 64
@@ -64,7 +66,7 @@ void initialize_jobs(){
  * @return 0 
  *******************************************************************************/
 int main(int argc, char *argv[]) {
-char line[COMMAND_LINE_SIZE];
+char *line = (char *) malloc(sizeof(COMMAND_LINE_SIZE));
   initialize_jobs();
     strcpy(mi_shell, argv[0]);
     while (1) {
@@ -95,6 +97,7 @@ void imprimir_prompt() {
  * @param line   linea de comandos
  * @return  puntero a la linea
  *******************************************************************************/
+char *read_line(char *line) {
 char *read_line(char *line) {
     imprimir_prompt();
     fflush(stdout);
@@ -324,7 +327,7 @@ int internal_source(char **args){
  *@return 0
  *******************************************************************************/
 int execute_line(char *line) {
-    char *args[ARGS_SIZE];
+   char **args = malloc(sizeof(char *) * ARGS_SIZE);
     char tmp [COMMAND_LINE_SIZE] = "";
     //parsea la línea en argumentos
     if (parse_args(args, line) > 0) {
@@ -379,7 +382,9 @@ int execute_line(char *line) {
         }   
     
     }
-    
+     //liberamos la memoria
+    memset(line, '\0', COMMAND_LINE_SIZE);
+    free(args);
     return EXIT_SUCCESS;
 }
 
@@ -396,14 +401,14 @@ int execute_line(char *line) {
 int parse_args(char **args, char *line) {
     int numTokens = 0;
 
-    args[numTokens] = strtok(line, " \t\n\r");
+    args[numTokens] = strtok(line, delimitadores);
 #if DEBUGN1
     fprintf(stderr, GRIS_T "[parse_args()→ token %i: %s]\n" RESET , numTokens, args[numTokens]);
 #endif
     while (args[numTokens] && args[numTokens][0] != '#')
     { 
         numTokens++;
-        args[numTokens] = strtok(NULL, " \t\n\r");
+        args[numTokens] = strtok(NULL, delimitadores);
 #if DEBUGN1
         fprintf(stderr,  GRIS_T "[parse_args()→ token %i: %s]\n" RESET , numTokens, args[numTokens]);
 #endif
@@ -424,7 +429,6 @@ int parse_args(char **args, char *line) {
 
 /*!*****************************************************************************
  * @brief Muestra el PID de procesos en background(segundo plano)
- * En este nivel, la función simplemente imprime su funcionamiento.
  * @param args Lista de argumentos (actualmente no utilizada).
  * @return 0
  *******************************************************************************/
