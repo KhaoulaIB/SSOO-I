@@ -10,6 +10,8 @@
 #define PROMPT "$ "
 #define COMMAND_LINE_SIZE 1024
 #define ARGS_SIZE 64
+#define delimitadores " \t\n\r"
+
 #define DEBUGN1 0
 #define DEBUGN2 0
 #define DEBUGN3 0
@@ -78,7 +80,7 @@ void initialize_jobs()
  *******************************************************************************/
 int main(int argc, char *argv[]){
 
-    char line[COMMAND_LINE_SIZE];
+char *line = (char *) malloc(sizeof(COMMAND_LINE_SIZE));
     initialize_jobs();
     strcpy(mi_shell, argv[0]);
 
@@ -213,7 +215,9 @@ int execute_line(char *line)
             }
         }
     }
-   
+    //liberamos la memoria
+    memset(line, '\0', COMMAND_LINE_SIZE);
+    free(args);
     return EXIT_SUCCESS;
 }
 
@@ -330,32 +334,19 @@ int internal_export(char **args) {
    char * nombre= (char *)malloc(sizeof(COMMAND_LINE_SIZE));
     char * valor = (char *)malloc(sizeof(COMMAND_LINE_SIZE));
 
+    nombre = strtok(args[1],"=");
+    valor = strtok(NULL,delimitadores );
 
-   int indexequal = -1;
-    for (int i = 0; i < strlen(args[1]); i++) {
-        if (args[1][i] == '=') {//sale cuando encuentra el primer igual
-            indexequal = i;
-            break;
-        }
-    }
-     if (indexequal == -1) { //si no existe el caracter '='
-        fprintf(stderr, ROJO_T "Sintaxis incorrecta. Uso: %s NOMBRE=VALOR\n", args[0]);
+     #if DEBUGN2
+    fprintf(stderr,GRIS_T"[internal_export()→ nombre: %s]\n"RESET,nombre);
+    fprintf(stderr,GRIS_T"[internal_export()→ valor: %s]\n"RESET,valor);
+    #endif
+    if (!nombre || !valor){
+         fprintf(stderr, ROJO_T "Sintaxis incorrecta. Uso: %s NOMBRE=VALOR\n", args[0]);
         return EXIT_FAILURE;
     }
    
-    // Obtener el nombre de la variable
-    strncpy(nombre, args[1], indexequal);
-    nombre[indexequal] = '\0'; // marcar el fin de la cadena
-
-    // Obtener el valor
-    int valor_length = strlen(args[1]) - indexequal - 1;
-    strncpy(valor, args[1] + indexequal + 1, valor_length);
-    valor[valor_length] = '\0'; 
-
-
     #if DEBUGN2
-    fprintf(stderr,GRIS_T"[internal_export()→ nombre: %s]\n"RESET,nombre);
-    fprintf(stderr,GRIS_T"[internal_export()→ valor: %s]\n"RESET,valor);
     fprintf(stderr,GRIS_T "[internal_export()→ antiguo valor para %s: %s]\n" RESET, nombre, getenv(nombre));
     #endif
     if (setenv(nombre, valor, 1) < 0) {
@@ -430,14 +421,14 @@ int internal_source(char **args){
 int parse_args(char **args, char *line) {
     int numTokens = 0;
 
-    args[numTokens] = strtok(line, " \t\n\r");
+    args[numTokens] = strtok(line, delimitadores);
 #if DEBUGN1
     fprintf(stderr, GRIS_T "[parse_args()→ token %i: %s]\n" RESET , numTokens, args[numTokens]);
 #endif
     while (args[numTokens] && args[numTokens][0] != '#')
     { 
         numTokens++;
-        args[numTokens] = strtok(NULL, " \t\n\r");
+        args[numTokens] = strtok(NULL, delimitadores);
 #if DEBUGN1
         fprintf(stderr,  GRIS_T "[parse_args()→ token %i: %s]\n" RESET , numTokens, args[numTokens]);
 #endif
@@ -466,7 +457,7 @@ void ctrlc(int signum) {
 #endif
 
     if (jobs_list[0].pid > 0) { //Hay proceso en foreground?
-        if (strcmp(jobs_list[0].cmd, mi_shell) != 0) { // y no es la mini_shell
+        if (strcmp(jobs_list[0].cmd, mi_shell)) { // y no es la mini_shell
             //eniviaremos la señal SIGTERM
            kill(jobs_list[0].pid, SIGTERM);
             //y lo notificamos
@@ -497,6 +488,7 @@ void ctrlc(int signum) {
  *@param line : linea a ejecutar
  *@return 0
  *******************************************************************************/
+
 void reaper(int signum)
 {
     signal(SIGCHLD, reaper);
