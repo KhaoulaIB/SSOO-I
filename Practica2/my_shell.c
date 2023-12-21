@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <ctype.h>
+#define delimitadores " \t\n\r"
 
 #define PROMPT "$ "
 #define COMMAND_LINE_SIZE 1024
@@ -194,8 +196,7 @@ int execute_line(char *line) {
                 signal(SIGINT, SIG_IGN);
                 is_output_redirection(args);
                 execvp(args[0], args);
-                //perror("execvp");
-                fprintf(stderr,"%s : comando inexistente\n"RESET,args[0]);
+                fprintf(stderr,ROJO_T"%s : comando inexistente\n"RESET,args[0]);
                 fflush(stderr);
                 exit(EXIT_FAILURE);
             }else if(pid > 0){
@@ -361,38 +362,23 @@ int internal_export(char **args) {
         fprintf(stderr, ROJO_T "Sintaxis incorrecta. Uso: %s NOMBRE=VALOR\n", args[0]);
         return EXIT_FAILURE;
     }
-    
+   char * nombre= (char *)malloc(sizeof(COMMAND_LINE_SIZE));
+    char * valor = (char *)malloc(sizeof(COMMAND_LINE_SIZE));
 
-    int indexequal = -1;
-    for (int i = 0; i < strlen(args[1]); i++) {
-        if (args[1][i] == '=') {//sale cuando encuentra el primer igual
-            indexequal = i;
-            break;
-        }
-    }
-     if (indexequal == -1) { //si no existe el caracter '='
-        fprintf(stderr, ROJO_T "Sintaxis incorrecta. Uso: %s NOMBRE=VALOR\n", args[0]);
+    nombre = strtok(args[1],"=");
+    valor = strtok(NULL,delimitadores );
+
+     #if DEBUGN2
+    fprintf(stderr,GRIS_T"[internal_export()→ nombre: %s]\n"RESET,nombre);
+    fprintf(stderr,GRIS_T"[internal_export()→ valor: %s]\n"RESET,valor);
+    #endif
+    if (!nombre || !valor){
+         fprintf(stderr, ROJO_T "Sintaxis incorrecta. Uso: %s NOMBRE=VALOR\n", args[0]);
         return EXIT_FAILURE;
     }
    
-
-    // Obtener el nombre de la variable
-    char nombre[COMMAND_LINE_SIZE]; 
-    strncpy(nombre, args[1], indexequal);
-    nombre[indexequal] = '\0'; // marcar el fin de la cadena
-    
-    // Obtener el valor
-    char valor[COMMAND_LINE_SIZE]; 
-    int valor_length = strlen(args[1]) - indexequal - 1;
-    strncpy(valor, args[1] + indexequal + 1, valor_length);
-    valor[valor_length] = '\0'; 
-
-
-
     #if DEBUGN2
-    printf(GRIS_T"[internal_export()→ nombre: %s]\n",nombre);
-    printf(GRIS_T"[internal_export()→ valor: %s]\n",valor);
-    printf(GRIS_T "[internal_export()→ antiguo valor para %s: %s]\n" RESET, nombre, getenv(nombre));
+    fprintf(stderr,GRIS_T "[internal_export()→ antiguo valor para %s: %s]\n" RESET, nombre, getenv(nombre));
     #endif
     if (setenv(nombre, valor, 1) < 0) {
         #if DEBUGN2
@@ -401,7 +387,7 @@ int internal_export(char **args) {
         return EXIT_FAILURE;
     }
     #if DEBUGN2
-    printf(GRIS_T "[internal_export()→ nuevo valor para %s: %s]\n" RESET, nombre, getenv(nombre));
+    fprintf(stderr,GRIS_T "[internal_export()→ nuevo valor para %s: %s]\n" RESET, nombre, getenv(nombre));
     #endif
     return EXIT_SUCCESS;
 }
@@ -467,14 +453,14 @@ int parse_args(char **args, char *line)
     int numTokens = 0;
     //una possible cambio es quitar los comentarios de line antes de torcearla
 
-    args[numTokens] = strtok(line, " \t\n\r");
+    args[numTokens] = strtok(line, delimitadores);
 #if DEBUGN1
     fprintf(stderr, GRIS_T "[parse_args()→ token %i: %s]\n" RESET, numTokens, args[numTokens]);
 #endif
     while (args[numTokens] && args[numTokens][0] != '#')
     {
         numTokens++;
-        args[numTokens] = strtok(NULL, " \t\n\r");
+        args[numTokens] = strtok(NULL, delimitadores);
 #if DEBUGN1
         fprintf(stderr, GRIS_T "[parse_args()→ token %i: %s]\n" RESET, numTokens, args[numTokens]);
 #endif
@@ -595,12 +581,19 @@ int is_output_redirection(char **args) {
 
 int internal_bg(char **args){
 
-    //da error y no sé por qué
+   
    if(args[1] == NULL){
         fprintf(stderr, ROJO_T "Uso: bg <número de trabajo>\n" RESET);
         return EXIT_FAILURE;
     }
 
+    for(int i =0; i<strlen(args[1]); i++){
+        if (isdigit(args[1][i])==0){
+        fprintf(stderr, ROJO_T "Uso: bg <número de trabajo>\n" RESET);
+        return EXIT_FAILURE;
+        }
+    }
+   
     int pos = atoi(args[1]);
     if(pos == 0 || pos > n_job ){
         fprintf(stderr, ROJO_T "bg: no existe ese trabajo\n" RESET);
@@ -638,9 +631,16 @@ int internal_fg(char **args){
    #endif
 
    if (args[1] == NULL){
-     fprintf(stderr, ROJO_T"\nError fg"RESET);
-    return EXIT_FAILURE; 
+      fprintf(stderr, ROJO_T "Uso: bg <número de trabajo>\n" RESET);
+        return EXIT_FAILURE; 
    }
+
+    for(int i =0; i<strlen(args[1]); i++){
+        if (isdigit(args[1][i])==0){
+        fprintf(stderr, ROJO_T "Uso: fg <número de trabajo>\n" RESET);
+        return EXIT_FAILURE;
+        }
+    }
 
     int pos = atoi(args[1]);
     if (pos>n_job || pos == 0){
@@ -729,7 +729,9 @@ void reaper(int signum){
     signal(SIGCHLD, reaper);
     pid_t ended;
     int status;
+    #if DEBUGN4
     char mensaje[1200];
+    #endif
     while ((ended = waitpid(-1, &status, WNOHANG)) > 0){
         if (ended == jobs_list[0].pid) { // si el proceso esta en foreground
             #if DEBUGN4
@@ -809,8 +811,9 @@ int internal_jobs(char **args) {
 void ctrlz(int signum) {
     //asociamos de nuevo la señal al manejador ctrlz
     signal(SIGTSTP,ctrlz);
+    #if DEBUGN4
     char msg [3000];    
-    pid_t foreground_pid = jobs_list[0].pid;
+    #endif
     #if DEBUGN4
     fprintf(stderr, GRIS_T"\n[ctrlz()→ Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]\n" RESET,
     getpid(), mi_shell, foreground_pid, jobs_list[0].cmd);
