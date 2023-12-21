@@ -47,13 +47,15 @@ void BorrarChar(char * palabra, char c);
 
 struct info_job{
     pid_t pid;
-    char estado; // ‘N’, ’E’, ‘D’, ‘F’ (‘N’: Ninguno, ‘E’: Ejecutándose y ‘D’: Detenido, ‘F’: Finalizado) 
+    char estado; // ‘N’, ’E’, ‘D’, ‘F’ 
+    //(‘N’: Ninguno,‘E’: Ejecutándose, ‘D’: Detenido, F: Finalizado) 
     char cmd[COMMAND_LINE_SIZE];
 
 };
 
 static struct info_job jobs_list [N_JOBS]; 
-static char mi_shell[COMMAND_LINE_SIZE];/*variable global para guardar el nombre del minishell*/
+
+static char mi_shell[COMMAND_LINE_SIZE];
 void initialize_jobs(){
     jobs_list[0].pid = 0;
     jobs_list[0].estado = 'N';
@@ -98,7 +100,6 @@ void imprimir_prompt() {
  * @return  puntero a la linea
  *******************************************************************************/
 char *read_line(char *line) {
-char *read_line(char *line) {
     imprimir_prompt();
     fflush(stdout);
     sleep(0.5); // Esperar 0.5 segundos
@@ -132,6 +133,9 @@ char *read_line(char *line) {
  *******************************************************************************/
 
 int internal_cd(char **args) {
+     #if DEBUGN1
+    printf(GRIS_T NEGRITA"[internal_cd() → Esta función cambiará de directorio]\n"RESET);
+    #endif
     char *home_dir = getenv("HOME");
     char *target_dir;
 
@@ -143,7 +147,6 @@ int internal_cd(char **args) {
         target_dir = args[1];
     } else {
         // Caso avanzado: se han proporcionado más de 1 argumento
-        // Concatenar los argumentos para formar la ruta completa
         int total_length = 0;
         for (int i = 1; args[i]; i++) {
             total_length += strlen(args[i]);
@@ -152,6 +155,7 @@ int internal_cd(char **args) {
         target_dir = (char *)malloc(total_length + 1);
         target_dir[0] = '\0';  // Inicializar la cadena 
 
+        // Concatenar los argumentos para formar la ruta completa
         for (int i = 1; args[i]; i++) {
             strcat(target_dir, args[i]);
             if (args[i + 1]) {
@@ -171,7 +175,7 @@ int internal_cd(char **args) {
         } else if (strchr(target_dir, '\\') != NULL) {
            BorrarChar(target_dir,'\\');
         } else {
-            fprintf(stderr,ROJO_T"cd: Too much arguments\n"RESET);
+            fprintf(stderr,ROJO_T NEGRITA"cd: Too much arguments\n"RESET);
             return EXIT_FAILURE;
         }
     
@@ -185,7 +189,7 @@ int internal_cd(char **args) {
     char current_dir[ARGS_SIZE];
     if (getcwd(current_dir, sizeof(current_dir)) != NULL) {
         #if DEBUGN2
-        fprintf(stderr,GRIS_T"[internal_cd()→ PWD: %s]\n"RESET, current_dir);
+        fprintf(stderr,GRIS_T NEGRITA"[internal_cd()→ PWD: %s]\n"RESET, current_dir);
         #endif
     } else {
         perror("getcwd");
@@ -193,6 +197,7 @@ int internal_cd(char **args) {
 
     return EXIT_SUCCESS;
 }
+
 
 /*!*****************************************************************************
  * @brief Borra el caracter c de la palabra.
@@ -225,40 +230,29 @@ void BorrarChar(char * palabra, char c){
  *******************************************************************************/
 
 int internal_export(char **args) {
-
+     #if DEBUGN1
+    printf(GRIS_T NEGRITA"[internal_export() → Esta función asignará valores a variablescd de entorno]\n"RESET);
+    #endif
     if (!args[1]) {
-        fprintf(stderr, ROJO_T "Sintaxis incorrecta. Uso: %s NOMBRE=VALOR\n", args[0]);
+        fprintf(stderr, ROJO_T "Error de sintaxis. Uso: export Nombre=Valor\n"RESET);
         return EXIT_FAILURE;
     }
    char * nombre= (char *)malloc(sizeof(COMMAND_LINE_SIZE));
     char * valor = (char *)malloc(sizeof(COMMAND_LINE_SIZE));
 
+    nombre = strtok(args[1],"=");
+    valor = strtok(NULL,delimitadores);
 
-   int indexequal = -1;
-    for (int i = 0; i < strlen(args[1]); i++) {
-        if (args[1][i] == '=') {//sale cuando encuentra el primer igual
-            indexequal = i;
-            break;
-        }
-    }
-     if (indexequal == -1) { //si no existe el caracter '='
-        fprintf(stderr, ROJO_T "Sintaxis incorrecta. Uso: %s NOMBRE=VALOR\n", args[0]);
+     #if DEBUGN2
+    fprintf(stderr,GRIS_T"[internal_export()→ nombre: %s]\n"RESET,nombre);
+    fprintf(stderr,GRIS_T"[internal_export()→ valor: %s]\n"RESET,valor);
+    #endif
+    if (!nombre || !valor){
+         fprintf(stderr, ROJO_T "Error de sintaxis. Uso: export Nombre=Valor\n"RESET);
         return EXIT_FAILURE;
     }
    
-    // Obtener el nombre de la variable
-    strncpy(nombre, args[1], indexequal);
-    nombre[indexequal] = '\0'; // marcar el fin de la cadena
-
-    // Obtener el valor
-    int valor_length = strlen(args[1]) - indexequal - 1;
-    strncpy(valor, args[1] + indexequal + 1, valor_length);
-    valor[valor_length] = '\0'; 
-
-
     #if DEBUGN2
-    fprintf(stderr,GRIS_T"[internal_export()→ nombre: %s]\n"RESET,nombre);
-    fprintf(stderr,GRIS_T"[internal_export()→ valor: %s]\n"RESET,valor);
     fprintf(stderr,GRIS_T "[internal_export()→ antiguo valor para %s: %s]\n" RESET, nombre, getenv(nombre));
     #endif
     if (setenv(nombre, valor, 1) < 0) {
@@ -282,7 +276,7 @@ int internal_export(char **args) {
 
 int internal_source(char **args){
     #if DEBUGN1
-    printf(GRIS_T"[internal_source() → Esta función ejecutará un fichero de líneas de comandos]\n"RESET);
+    printf(GRIS_T NEGRITA"[internal_source() → Esta función ejecutará un fichero de líneas de comandos]\n"RESET);
     #endif
    
     if (args[1] == NULL) {
@@ -295,7 +289,6 @@ int internal_source(char **args){
         fprintf(stderr, ROJO_T"fopen: No such file or directory\n"RESET);
         return EXIT_FAILURE;
     }
-    // Inicialización longitud de la línea y el buffer
     char *line = (char *)malloc(COMMAND_LINE_SIZE);
 
     // Lee el archivo línea por línea y las ejecuta
@@ -308,7 +301,7 @@ int internal_source(char **args){
         }
         fflush(file);
         #if DEBUGN3
-                printf(GRIS_T "\n[internal_source()→ LINE: %s]\n" RESET, line);
+                fprintf(stderr, GRIS_T"\n[internal_source()→ LINE: %s]\n" RESET, line);
         #endif  
         if (execute_line(line) != 0) {
             fprintf(stderr, ROJO_T"Error al ejecutar la línea: %s\n"RESET, line);
@@ -327,6 +320,7 @@ int internal_source(char **args){
  *@return 0
  *******************************************************************************/
 int execute_line(char *line) {
+
    char **args = malloc(sizeof(char *) * ARGS_SIZE);
     char tmp [COMMAND_LINE_SIZE] = "";
     //parsea la línea en argumentos
@@ -334,7 +328,7 @@ int execute_line(char *line) {
             #if DEBUGN2
             check_internal(args);
             #endif
-        //reconstruir la linea de comando a partir de los tokens de args
+        //reconstruir la linea de comando 
             for (int i = 0; args[i] != NULL; i++)
         {
             strcat(tmp, args[i]);
@@ -343,7 +337,7 @@ int execute_line(char *line) {
                 strcat(tmp, " ");
             }
         }
-        strcpy(jobs_list[0].cmd,line);
+        strcpy(jobs_list[0].cmd,tmp);
 
         if(check_internal(args) == 0){
             //si es un comando externo
@@ -351,20 +345,18 @@ int execute_line(char *line) {
             if(pid == 0){
                 //Proceso hijo
                 execvp(args[0], args);
-               // perror(strerror(errno));
                 fprintf(stderr,ROJO_T "%s : comando inexistente.\n"RESET,args[0]);
                 exit(EXIT_FAILURE);
             }else if(pid > 0){
                 //Proceso padre
                 jobs_list[0].pid = pid;
                 jobs_list[0].estado = 'E';
-                strcpy(jobs_list[0].cmd, line);
+                strcpy(jobs_list[0].cmd, tmp);
                 #if DEBUGN3    
                 //visualización pids del padre e hijo
                 fprintf(stderr,GRIS_T"[execute_line()→ PID padre: %i (%s)]\n"RESET,getpid(),mi_shell);
                 fprintf(stderr,GRIS_T"[execute_line()→ PID hijo: %i (%s)]\n"RESET,pid,jobs_list[0].cmd);
                 #endif
-                //fflush(stdout);
                 //espera a que el proceso hijo finalice
                 #if DEBUGN3
                 int status;
@@ -435,7 +427,7 @@ int parse_args(char **args, char *line) {
 
 int internal_jobs(char **args){
     #if DEBUGN1
-    printf(GRIS_T"[internal_jobs() → Esta función mostrará el PID de los procesos que no estén en foreground]\n"RESET);
+    printf(GRIS_T NEGRITA"[internal_jobs() → Esta función mostrará el PID de los procesos que no estén en foreground]\n"RESET);
     #endif
     return 0;
 }
@@ -450,7 +442,7 @@ int internal_jobs(char **args){
 
 int internal_bg(char **args){
    #if DEBUGN1 
-   printf(GRIS_T"[internal_bg() →  Esta función envia a segundo plano el trabajo indicado con su Índice"RESET);
+   printf(GRIS_T NEGRITA"[internal_bg() →  Esta función envia a segundo plano el trabajo indicado con su Índice"RESET);
    #endif
     return 0; 
 }
@@ -463,7 +455,7 @@ int internal_bg(char **args){
 
 int internal_fg(char **args){
    #if DEBUGN1
-   printf(GRIS_T"[internal_fg() →  Esta función envia a primer plano el trabajo indicado con su índice"RESET);
+   printf(GRIS_T NEGRITA"[internal_fg() →  Esta función envia a primer plano el trabajo indicado con su índice"RESET);
    #endif
     return 0; 
 }
@@ -478,46 +470,20 @@ int internal_fg(char **args){
  *******************************************************************************/
 
 int check_internal(char **args){
-   int internal = 0;
+   int internal = 1;
   
-    if (strcmp(args[0], "cd") == 0){
-        internal_cd(args);
-                internal=1;
-
-    }
-    else if (strcmp(args[0], "export") == 0)
-    {
-        internal_export(args);
-        internal=1;
-    }
-    else if (strcmp(args[0], "source") == 0)
-    {
-        internal_source(args);
-        internal=1;
-    }
-    else if (strcmp(args[0], "jobs") == 0)
-    {
-        internal_jobs(args);
-        internal=1;
-    }
-    else if (strcmp(args[0], "fg") == 0)
-    {
-        internal_fg(args);
-        internal=1;
-    }
-    else if (strcmp(args[0], "bg") == 0)
-    {
-        internal_bg(args);
-        internal=1;
-    }
+    if (strcmp(args[0], "cd") == 0){ internal_cd(args);}
+    else if (strcmp(args[0], "export") == 0){ internal_export(args);}
+    else if (strcmp(args[0], "source") == 0){internal_source(args);}
+    else if (strcmp(args[0], "jobs") == 0){internal_jobs(args);}
+    else if (strcmp(args[0], "fg") == 0){internal_fg(args);}
+    else if (strcmp(args[0], "bg") == 0){internal_bg(args);}
     else if (strcmp(args[0], "exit") == 0){
         #if DEBUGN1
         printf("\n Bye Bye\n");
         #endif
-        internal=1;
         exit(0);
-    }
-
+    }else{internal=0;}
     return internal;
 
 }
