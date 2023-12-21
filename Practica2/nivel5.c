@@ -691,8 +691,7 @@ void ctrlz(int signum) {
             #endif
             jobs_list[0].estado = 'D';
             jobs_list_add(foreground_pid, 'D', jobs_list[0].cmd);
-            printf("[%i] %i \t%c \t%s \n", BACKGROUND, jobs_list[0].pid, jobs_list[0].estado, jobs_list[0].cmd);
-            BACKGROUND++;
+            printf("[%i] %i \t%c \t%s \n", n_job, jobs_list[n_job].pid, jobs_list[n_job].estado, jobs_list[n_job].cmd);
            //rastrear los datos de jobs_list[0]
             memset(jobs_list[0].cmd, '\0', COMMAND_LINE_SIZE);
             jobs_list[0].pid = 0;
