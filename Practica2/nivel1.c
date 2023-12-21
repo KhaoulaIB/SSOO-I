@@ -3,9 +3,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+
 #define PROMPT "$ "
 #define COMMAND_LINE_SIZE 1024
 #define ARGS_SIZE 64
+#define delimitadores " \t\n\r"
 #define DEBUGN1 1
 #define RESET "\033[0m"
 #define NEGRO_T "\x1b[30m"
@@ -38,7 +40,7 @@ int internal_bg(char **args);
  * @return 0 
  *******************************************************************************/
 int main() {
-char line[COMMAND_LINE_SIZE];
+char *line = (char *) malloc(sizeof(COMMAND_LINE_SIZE));
     
     while (1) {
         if (read_line(line)) {
@@ -77,7 +79,7 @@ char *read_line(char *line) {
         printf("\r");
         if (feof(stdin)){
         // Ctrl+D fue presionado
-        #if DEBUGN3
+        #if DEBUGN1
         printf("\nAdiós!\n");
         #endif
         exit(EXIT_SUCCESS);
@@ -90,9 +92,6 @@ char *read_line(char *line) {
         }
             return line;
 }
-       
-     
-}
 /*!*****************************************************************************
  * @brief Ejecuta la linea de comando. 
  @param line : linea a ejecutar
@@ -100,10 +99,15 @@ char *read_line(char *line) {
  *******************************************************************************/
 
 int execute_line(char *line) {
-    char *args[ARGS_SIZE];
-    if (parse_args(args, line) > 0) {    //parsea la línea en argumentos
+   char **args = malloc(sizeof(char *) * ARGS_SIZE);
+    if (parse_args(args, line) > 0) 
+    {    //parsea la línea en argumentos
         check_internal(args);
     }
+
+    //liberamos memoria
+    memset(line, '\0', COMMAND_LINE_SIZE);
+    free(args);
     return 0;
 }
 
@@ -118,21 +122,21 @@ int execute_line(char *line) {
 int parse_args(char **args, char *line) {
     int numTokens = 0;
 
-    args[numTokens] = strtok(line, " \t\n\r");
+    args[numTokens] = strtok(line, delimitadores);
 #if DEBUGN1
     fprintf(stderr, GRIS_T "[parse_args()→ token %i: %s]\n" RESET , numTokens, args[numTokens]);
 #endif
     while (args[numTokens] && args[numTokens][0] != '#')
     { //troceamos hasta llegar a un comentario (procedido por #)
         numTokens++;
-        args[numTokens] = strtok(NULL, " \t\n\r");
+        args[numTokens] = strtok(NULL, delimitadores);
 #if DEBUGN1
         fprintf(stderr,  GRIS_T "[parse_args()→ token %i: %s]\n" RESET , numTokens, args[numTokens]);
 #endif
     }
     if (args[numTokens])
     {
-        args[numTokens] = NULL; // por si el último token es el símbolo comentario
+        args[numTokens] = NULL; 
 #if DEBUGN1
         fprintf(stderr,  GRIS_T"[parse_args()→ token %i corregido: %s]\n" RESET, numTokens, args[numTokens]);
 #endif
@@ -142,53 +146,27 @@ int parse_args(char **args, char *line) {
 
 /*!*****************************************************************************
  * @brief Comprueba si args[0] es comando interno o externo.
- * En los comandos internos llama a la función que le corresponde.
+ * En los comandos internos llama a la función que les corresponde.
  * @param args  lista de argumentos 
  * @return 1 si el comando es interno. O en caso contrario.
  *******************************************************************************/
 
 
 int check_internal(char **args){
-   int internal = 0;
+   int internal = 1;
   
-    if (strcmp(args[0], "cd") == 0){
-        internal_cd(args);
-                internal=1;
-
-    }
-    else if (strcmp(args[0], "export") == 0)
-    {
-        internal_export(args);
-        internal=1;
-    }
-    else if (strcmp(args[0], "source") == 0)
-    {
-        internal_source(args);
-        internal=1;
-    }
-    else if (strcmp(args[0], "jobs") == 0)
-    {
-        internal_jobs(args);
-        internal=1;
-    }
-    else if (strcmp(args[0], "fg") == 0)
-    {
-        internal_fg(args);
-        internal=1;
-    }
-    else if (strcmp(args[0], "bg") == 0)
-    {
-        internal_bg(args);
-        internal=1;
-    }
+    if (strcmp(args[0], "cd") == 0){ internal_cd(args);}
+    else if (strcmp(args[0], "export") == 0){ internal_export(args);}
+    else if (strcmp(args[0], "source") == 0){internal_source(args);}
+    else if (strcmp(args[0], "jobs") == 0){internal_jobs(args);}
+    else if (strcmp(args[0], "fg") == 0){internal_fg(args);}
+    else if (strcmp(args[0], "bg") == 0){internal_bg(args);}
     else if (strcmp(args[0], "exit") == 0){
         #if DEBUGN1
         printf("\n Bye Bye\n");
         #endif
-        internal=1;
         exit(0);
-    }
-
+    }else{internal=0;}
     return internal;
 
 }
@@ -202,7 +180,7 @@ int check_internal(char **args){
 
 int internal_cd(char **args){
     #if DEBUGN1
-    printf(GRIS_T"[internal_cd() → Esta función cambiará de directorio]\n"RESET);
+    printf(GRIS_T NEGRITA"[internal_cd() → Esta función cambiará de directorio]\n"RESET);
     #endif
     return 0;
 }
@@ -216,7 +194,7 @@ int internal_cd(char **args){
 
 int internal_export(char **args){
     #if DEBUGN1
-    printf(GRIS_T"[internal_export() → Esta función asignará valores a variablescd de entorno]\n"RESET);
+    printf(GRIS_T NEGRITA"[internal_export() → Esta función asignará valores a variablescd de entorno]\n"RESET);
     #endif
     return 0;
 }
@@ -230,7 +208,7 @@ int internal_export(char **args){
 
 int internal_source(char **args){
     #if DEBUGN1
-    printf(GRIS_T"[internal_source() → Esta función ejecutará un fichero de líneas de comandos]\n"RESET);
+    printf(GRIS_T NEGRITA"[internal_source() → Esta función ejecutará un fichero de líneas de comandos]\n"RESET);
     #endif
     return 0;
 }
@@ -244,7 +222,7 @@ int internal_source(char **args){
 
 int internal_jobs(char **args){
     #if DEBUGN1
-    printf(GRIS_T"[internal_jobs() → Esta función mostrará el PID de los procesos que no estén en foreground]\n"RESET);
+    printf(GRIS_T NEGRITA"[internal_jobs() → Esta función mostrará el PID de los procesos que no estén en foreground]\n"RESET);
     #endif
     return 0;
 }
@@ -258,7 +236,7 @@ int internal_jobs(char **args){
 
 int internal_bg(char **args){
    #if DEBUGN1 
-   printf(GRIS_T"[internal_bg() →  Esta función envia a segundo plano el trabajo indicado con su Índice"RESET);
+   printf(GRIS_T NEGRITA"[internal_bg() →  Esta función envia a segundo plano el trabajo indicado con su Índice"RESET);
    #endif
     return 0; 
 }
@@ -272,7 +250,7 @@ int internal_bg(char **args){
 
 int internal_fg(char **args){
    #if DEBUGN1
-   printf(GRIS_T"[internal_fg() →  Esta función envia a primer plano el trabajo indicado con su índice"RESET);
+   printf(GRIS_T NEGRITA"[internal_fg() →  Esta función envia a primer plano el trabajo indicado con su índice"RESET);
    #endif
     return 0; 
 }
