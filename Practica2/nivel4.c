@@ -451,6 +451,43 @@ int parse_args(char **args, char *line) {
  *@return 0
  *******************************************************************************/
 
+/*void ctrlc(int signum) {
+    signal(SIGINT,ctrlc);
+#if DEBUGN4
+    printf(GRIS_T "\n[ctrlc()→ Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]\n" RESET,
+           getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
+#endif
+#if DEBUGN5
+    fprintf(stderr,"\n[ctrlc()→ recibida señal 2 (SIGINT)]\n"RESET);
+#endif
+
+    if (jobs_list[0].pid > 0) { //Hay proceso en foreground?
+        if (strcmp(jobs_list[0].cmd, mi_shell)) { // y no es la mini_shell
+            //eniviaremos la señal SIGTERM
+           kill(jobs_list[0].pid, SIGTERM);
+            //y lo notificamos
+        #if DEBUGN4
+        fprintf(stderr, GRIS_T "[ctrlc()→ Señal %i (SIGTERM) enviada a %d (%s) por %d (%s)]\n" RESET, SIGTERM, jobs_list[0].pid, jobs_list[0].cmd, getpid(), mi_shell);
+        #endif
+
+        }
+        else
+        { // Si es la mini_shell, no se debe abortar
+#if DEBUGN4
+            fprintf(stderr, GRIS_T "[ctrlc()→ Señal %i (SIGTERM) no enviada por %d (%s) debido a que el proceso en foreground es el shell]\n" RESET, SIGTERM, getpid(), mi_shell);
+#endif
+        }
+    } else {    //No hay proceso en foregroud
+#if DEBUGN4
+        fprintf(stderr, GRIS_T "[ctrlc()→ Señal %i (SIGTERM)no enviada por %d (%s) debido a que no hay proceso en foreground]\n" RESET, SIGTERM, getpid(), mi_shell);
+#endif
+    }
+    // Limpiamos nuestro flujo de salida
+    printf("\n");
+    fflush(stdout);
+}*/
+
+
 void ctrlc(int signum) {
     signal(SIGINT,ctrlc);
 #if DEBUGN4
@@ -499,7 +536,7 @@ void reaper(int signum)
     signal(SIGCHLD, reaper);
     pid_t ended;
     int status;
-     #if DEBUGN5
+     #if DEBUGN4
     fprintf(stderr,GRIS_T"\n[reaper()→ recibida señal %i (SIGCHLD)]\n"RESET,SIGCHLD);
     #endif
     while ((ended = waitpid(-1, &status, WNOHANG)) > 0){
