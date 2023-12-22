@@ -156,7 +156,12 @@ char *read_line(char *line) {
             return line;
 }
 
-
+/*!*****************************************************************************
+ * @brief Ejecuta la linea de comando. 
+ *Si es un comando externo lo ejecuta un proceso hijo.
+ *@param line : linea a ejecutar
+ *@return 0 si la ejecución fue correcta
+ *******************************************************************************/
 int execute_line(char *line) {
    char **args = malloc(sizeof(char *) * ARGS_SIZE);
     char tmp[COMMAND_LINE_SIZE] = ""; 
@@ -505,6 +510,12 @@ int check_internal(char **args){
 }
 
 
+/*!*****************************************************************************
+ * @brief Verifica si hay redirección de salida.
+ *Sí está, redirige la salida estándar al archivo especificado
+ * @param args  lista de argumentos 
+ * @return 0 si el redireccionamiento fue correcto.
+ *******************************************************************************/
 
 int is_output_redirection(char **args) {
     for (int i = 0; args[i] != NULL; i++) {
