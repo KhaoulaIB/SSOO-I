@@ -40,7 +40,6 @@ int internal_bg(char **args);
 void BorrarChar(char * palabra, char c);
 
 
-
 /*!*****************************************************************************
  * @brief El main de nuesto shell
  * lea las lineas de comando y las ejecuta.
@@ -115,7 +114,8 @@ char *read_line(char *line) {
 
 int execute_line(char *line) {
    char **args = malloc(sizeof(char *) * ARGS_SIZE);
-    if (parse_args(args, line) > 0) {    //parsea la línea en argumentos
+    if (parse_args(args, line) > 0) {  
+          //parsea la línea en argumentos
         check_internal(args);
     }
     memset(line, '\0', COMMAND_LINE_SIZE);
@@ -300,8 +300,6 @@ int internal_export(char **args) {
     #endif
     return EXIT_SUCCESS;
 }
-
-
 
 
 
