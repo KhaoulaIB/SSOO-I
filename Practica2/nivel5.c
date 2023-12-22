@@ -147,7 +147,12 @@ char *read_line(char *line) {
 }
 
 
-
+/*!*****************************************************************************
+ * @brief Ejecuta la linea de comando. 
+ *Si es un comando externo lo ejecuta un proceso hijo.
+ *@param line : linea a ejecutar
+ *@return 0 si la ejecución fue correcta
+ *******************************************************************************/
 int execute_line(char *line) {
    char **args = malloc(sizeof(char *) * ARGS_SIZE);
     char tmp[COMMAND_LINE_SIZE] = ""; 
@@ -546,6 +551,7 @@ void ctrlc(int signum) {
         if (strcmp(jobs_list[0].cmd, mi_shell)) { // y no es la mini_shell
             //eniviaremos la señal SIGTERM
            kill(jobs_list[0].pid, SIGTERM);
+           
             //y lo notificamos
         #if DEBUGN4
          sprintf(mensaje,GRIS_T "[ctrlc()→ Señal %i (SIGTERM) enviada a %d (%s) por %d (%s)]\n" RESET, SIGTERM, jobs_list[0].pid, jobs_list[0].cmd, getpid(), mi_shell);
@@ -641,6 +647,7 @@ void reaper(int signum){
 }
 
 
+
 /*!*****************************************************************************
  * @brief Imprime la lista de procesos
  * @param   args    lista de argumentos
@@ -714,6 +721,7 @@ void ctrlz(int signum) {
     printf("\n");
     fflush(stdout);
 }
+
 
 /*!*****************************************************************************
  * @brief Función que determina si un proceso es de primer plano.
