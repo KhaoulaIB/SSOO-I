@@ -1,7 +1,4 @@
--Autores
-khaoula Ikkene
-Martina Kalin Georgieva
-Gaizka Medina Gordo
+
 
 Data: 21/12/23
 
