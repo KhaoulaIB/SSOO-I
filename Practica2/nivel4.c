@@ -467,19 +467,19 @@ void ctrlc(int signum) {
            kill(jobs_list[0].pid, SIGTERM);
             //y lo notificamos
         #if DEBUGN4
-        fprintf(stderr, GRIS_T "[ctrlc()→ Señal %i (SIGTERM) enviada a %d (%s) por %d (%s)]\n" RESET, SIGTERM, jobs_list[0].pid, jobs_list[0].cmd, getpid(), mi_shell);
+        fprintf(stderr, GRIS_T "[ctrlc()→ Señal %i enviada a %d (%s) por %d (%s)]\n" RESET, SIGTERM, jobs_list[0].pid, jobs_list[0].cmd, getpid(), mi_shell);
         #endif
 
         }
         else
         { // Si es la mini_shell, no se debe abortar
 #if DEBUGN4
-            fprintf(stderr, GRIS_T "[ctrlc()→ Señal %i (SIGTERM) no enviada por %d (%s) debido a que el proceso en foreground es el shell]\n" RESET, SIGTERM, getpid(), mi_shell);
+            fprintf(stderr, GRIS_T "[ctrlc()→ Señal %i no enviada por %d (%s) debido a que el proceso en foreground es el shell]\n" RESET, SIGTERM, getpid(), mi_shell);
 #endif
         }
     } else {    //No hay proceso en foregroud
 #if DEBUGN4
-        fprintf(stderr, GRIS_T "[ctrlc()→ Señal %i (SIGTERM)no enviada por %d (%s) debido a que no hay proceso en foreground]\n" RESET, SIGTERM, getpid(), mi_shell);
+        fprintf(stderr, GRIS_T "[ctrlc()→ Señal %i no enviada por %d (%s) debido a que no hay proceso en foreground]\n" RESET, SIGTERM, getpid(), mi_shell);
 #endif
     }
     // Limpiamos nuestro flujo de salida
