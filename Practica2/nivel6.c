@@ -7,6 +7,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #define delimitadores " \t\n\r"
@@ -221,10 +222,10 @@ int execute_line(char *line) {
                 jobs_list[0].estado = 'E';
                 strcpy(jobs_list[0].cmd,tmp);
 
-                  #if DEBUGN4
-                //visualización pids del padre e hijo
-                printf(GRIS_T"[execute_line()→ PID padre: %i (%s)]\n"RESET,getpid(), mi_shell);
-                printf(GRIS_T"[execute_line()→ PID hijo: %i (%s)]\n"RESET,pid,jobs_list[0].cmd);
+                 #if DEBUGN4
+                 // visualización pids del padre e hijo
+                fprintf(stderr, GRIS_T"[execute_line()→ PID padre: %i (%s)]\n" RESET, getpid(), mi_shell);
+                fprintf(stderr, GRIS_T"[execute_line()→ PID hijo: %i (%s)]\n" RESET, pid, jobs_list[0].cmd);
                 #endif
 
                 //esperamos a que llegué una señal
@@ -261,6 +262,9 @@ int execute_line(char *line) {
  *******************************************************************************/
 
 int internal_cd(char **args) {
+     #if DEBUGN1
+    printf(GRIS_T NEGRITA"[internal_cd() → Esta función cambiará de directorio]\n"RESET);
+    #endif
     char *home_dir = getenv("HOME");
     char *target_dir;
 
@@ -271,17 +275,16 @@ int internal_cd(char **args) {
         // Si hay un argumento, cambiar al directorio especificado
         target_dir = args[1];
     } else {
-    
         // Caso avanzado: se han proporcionado más de 1 argumento
-        // Concatenar los argumentos para formar la ruta completa
         int total_length = 0;
         for (int i = 1; args[i]; i++) {
             total_length += strlen(args[i]);
         }
 
         target_dir = (char *)malloc(total_length + 1);
-        target_dir[0] = '\0';  // Inicializar la cadena para evitar problemas con strcat
+        target_dir[0] = '\0';  // Inicializar la cadena 
 
+        // Concatenar los argumentos para formar la ruta completa
         for (int i = 1; args[i]; i++) {
             strcat(target_dir, args[i]);
             if (args[i + 1]) {
@@ -290,33 +293,32 @@ int internal_cd(char **args) {
         }
 
         int size = strlen(target_dir)-1;
-        //caso de comillas dobles
+        //caso de comillas dobles 
         if (target_dir[0] == '\"' && target_dir[size] == '\"') {
              BorrarChar(target_dir,'\"');
-
-             //caso de comillas simples          
-
+        //caso de comillas simples 
         }else if  (target_dir[0] == '\'' && target_dir[size] == '\'') {
+          
           BorrarChar(target_dir,'\'');
-        //caso de barra invertida
+        //caso de '\' 
         } else if (strchr(target_dir, '\\') != NULL) {
            BorrarChar(target_dir,'\\');
         } else {
-            printf(GRIS_T"cd: Too much arguments\n"RESET);
+            fprintf(stderr,ROJO_T NEGRITA"cd: Too much arguments\n"RESET);
             return EXIT_FAILURE;
         }
     
     }
 
     if (chdir(target_dir) != 0) {
-        perror(ROJO_T"chdir");
+        perror(ROJO_T"chdir() error");
         return EXIT_FAILURE;
     }
     
     char current_dir[ARGS_SIZE];
     if (getcwd(current_dir, sizeof(current_dir)) != NULL) {
         #if DEBUGN2
-        printf(GRIS_T"[internal_cd()→ PWD: %s]\n"RESET, current_dir);
+        fprintf(stderr,GRIS_T NEGRITA"[internal_cd()→ PWD: %s]\n"RESET, current_dir);
         #endif
     } else {
         perror("getcwd");
@@ -324,6 +326,7 @@ int internal_cd(char **args) {
 
     return EXIT_SUCCESS;
 }
+
 
 /*!*****************************************************************************
  * @brief Borra el caracter c de la palabra.
@@ -356,23 +359,25 @@ void BorrarChar(char * args, char c){
  *******************************************************************************/
 
 int internal_export(char **args) {
-
+     #if DEBUGN1
+    printf(GRIS_T NEGRITA"[internal_export() → Esta función asignará valores a variablescd de entorno]\n"RESET);
+    #endif
     if (!args[1]) {
-        fprintf(stderr, ROJO_T "Sintaxis incorrecta. Uso: %s NOMBRE=VALOR\n", args[0]);
+        fprintf(stderr, ROJO_T "Error de sintaxis. Uso: export Nombre=Valor\n"RESET);
         return EXIT_FAILURE;
     }
    char * nombre= (char *)malloc(sizeof(COMMAND_LINE_SIZE));
     char * valor = (char *)malloc(sizeof(COMMAND_LINE_SIZE));
 
     nombre = strtok(args[1],"=");
-    valor = strtok(NULL,delimitadores );
+    valor = strtok(NULL,delimitadores);
 
      #if DEBUGN2
     fprintf(stderr,GRIS_T"[internal_export()→ nombre: %s]\n"RESET,nombre);
     fprintf(stderr,GRIS_T"[internal_export()→ valor: %s]\n"RESET,valor);
     #endif
     if (!nombre || !valor){
-         fprintf(stderr, ROJO_T "Sintaxis incorrecta. Uso: %s NOMBRE=VALOR\n", args[0]);
+         fprintf(stderr, ROJO_T "Error de sintaxis. Uso: export Nombre=Valor\n"RESET);
         return EXIT_FAILURE;
     }
    
@@ -399,46 +404,45 @@ int internal_export(char **args) {
  * @param args Lista de argumentos 
  * @return 0 en caso de succeso.
  *******************************************************************************/
-
 int internal_source(char **args){
     #if DEBUGN1
-    printf(GRIS_T"[internal_source() → Esta función ejecutará un fichero de líneas de comandos]\n"RESET);
+    printf(GRIS_T NEGRITA"[internal_source() → Esta función ejecutará un fichero de líneas de comandos]\n"RESET);
     #endif
    
-   if (args[1] == NULL) {
+    if (args[1] == NULL) {
         fprintf(stderr, ROJO_T"Error de sintaxis. Uso: %s <nombre_fichero>\n" RESET, args[0]);
         return EXIT_FAILURE;
     }
 
-    FILE *file = fopen(args[1], "r");
+    FILE *file = fopen(args[1], "r");//modo lectura
     if (file == NULL) {
         fprintf(stderr, ROJO_T"fopen: No such file or directory\n"RESET);
         return EXIT_FAILURE;
     }
-    char *tmpline = (char *)malloc(COMMAND_LINE_SIZE);
+    char *line = (char *)malloc(COMMAND_LINE_SIZE);
 
-    // Lee el archivo línea por línea
-    while (fgets(tmpline, COMMAND_LINE_SIZE, file) != NULL) {
+    // Lee el archivo línea por línea y las ejecuta
+    while (fgets(line, COMMAND_LINE_SIZE, file) != NULL) {
         
         // Elimina el salto de línea ('\n' por '\0')
-        size_t length = strlen(tmpline);
-        if (length > 0 && tmpline[length - 1] == '\n') {
-            tmpline[length - 1] = '\0';
+        size_t length = strlen(line);
+        if (length > 0 && line[length - 1] == '\n') {
+            line[length - 1] = '\0';
         }
         fflush(file);
         #if DEBUGN3
-                printf(GRIS_T "\n[internal_source()→ LINE: %s]\n" RESET, tmpline);
-            #endif  
-        if (execute_line(tmpline) != 0) {
-            fprintf(stderr, ROJO_T"Error al ejecutar la línea: %s\n"RESET, tmpline);
+                fprintf(stderr, GRIS_T"\n[internal_source()→ LINE: %s]\n" RESET, line);
+        #endif  
+        if (execute_line(line) != 0) {
+            fprintf(stderr, ROJO_T"Error al ejecutar la línea: %s\n"RESET, line);
             fflush(stdout);
         }
-
     }
-    free(tmpline);
+    free(line);
     fclose(file);
     return EXIT_SUCCESS;
 }
+
 
  /*!*****************************************************************************
  * @brief Trocea la línea de comando en tokens y los guarda en args.
@@ -482,48 +486,21 @@ int parse_args(char **args, char *line)
  * @param args  lista de argumentos 
  * @return 1 si el comando es interno. O en caso contrario.
  *******************************************************************************/
-
 int check_internal(char **args){
-   int internal = 0;
+   int internal = 1;
   
-    if (strcmp(args[0], "cd") == 0){
-        internal=1;
-        internal_cd(args);
-    }
-    else if (strcmp(args[0], "export") == 0)
-    {
-
-        internal_export(args);
-        internal=1;
-    }
-    else if (strcmp(args[0], "source") == 0)
-    {
-        internal_source(args);
-        internal=1;
-    }
-    else if (strcmp(args[0], "jobs") == 0)
-    {
-        internal_jobs(args);
-        internal=1;
-    }
-    else if (strcmp(args[0], "fg") == 0)
-    {
-        internal_fg(args);
-        internal=1;
-    }
-    else if (strcmp(args[0], "bg") == 0)
-    {
-        internal_bg(args);
-        internal=1;
-    }
+    if (strcmp(args[0], "cd") == 0){ internal_cd(args);}
+    else if (strcmp(args[0], "export") == 0){ internal_export(args);}
+    else if (strcmp(args[0], "source") == 0){internal_source(args);}
+    else if (strcmp(args[0], "jobs") == 0){internal_jobs(args);}
+    else if (strcmp(args[0], "fg") == 0){internal_fg(args);}
+    else if (strcmp(args[0], "bg") == 0){internal_bg(args);}
     else if (strcmp(args[0], "exit") == 0){
-        #if DEBUGN2
+        #if DEBUGN1
         printf("\n Bye Bye\n");
         #endif
-        internal=1;
-            exit(0);
-    }
-
+        exit(0);
+    }else{internal=0;}
     return internal;
 
 }
@@ -603,7 +580,7 @@ int internal_bg(char **args){
     //envia señal SIGCONT al proceso
     kill(jobs_list[pos].pid,SIGCONT);
     #if DEBUGN6
-    printf(GRIS_T"\nSeñal %d (SIGCONT) enviada al proceso con PID %i\n"RESET,SIGCONT,jobs_list[pos].pid);
+    printf(GRIS_T"\n[internal_bg()→ Señal %d (SIGCONT) enviada al proceso con PID %i]\n"RESET,SIGCONT,jobs_list[pos].pid);
     #endif
 
     //visualización por pantalla información sobre el trabajo
@@ -645,7 +622,7 @@ int internal_fg(char **args){
             //enviamos la señal SIGCONT
             kill(jobs_list[pos].pid,SIGCONT);
             #if DEBUGN6
-            printf(GRIS_T"\nSeñal 18 (SIGCONT) enviada al proceso con PID %i\n"RESET,jobs_list[pos].pid);
+            printf(GRIS_T"\n[internal_fg()→ Señal 18 (SIGCONT) enviada al proceso con PID %i]\n"RESET,jobs_list[pos].pid);
             #endif
         }
             BorrarChar(jobs_list[pos].cmd,'&');
@@ -655,7 +632,6 @@ int internal_fg(char **args){
             strcpy(jobs_list[0].cmd,jobs_list[pos].cmd);
             jobs_list_remove(pos);
             printf("%s\n",jobs_list[0].cmd);   
-
              while (jobs_list[0].pid) 
             {
                 pause();
@@ -663,8 +639,6 @@ int internal_fg(char **args){
 
             return EXIT_SUCCESS;        
         }
-
-    
   
     fprintf(stderr,ROJO_T"Error args"RESET);
     return EXIT_FAILURE;
@@ -680,7 +654,7 @@ int internal_fg(char **args){
  *@return 0
  *******************************************************************************/
 
-void ctrlc(int signum) {
+/*void ctrlc(int signum) {
     signal(SIGINT,ctrlc);
 #if DEBUGN4
     printf(GRIS_T "\n[ctrlc()→ Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]\n" RESET,
@@ -711,6 +685,49 @@ void ctrlc(int signum) {
      printf("\n");
     fflush(stdout);
     
+}*/
+
+void ctrlc(int signum) {
+    signal(SIGINT,ctrlc);
+    
+#if DEBUGN4
+    char mensaje[3000];
+    printf(GRIS_T "\n[ctrlc()→ Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]\n" RESET,
+           getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
+#endif
+#if DEBUGN5
+
+    fprintf(stderr,"\n[ctrlc()→ recibida señal 2 (SIGINT)]\n"RESET);
+#endif
+
+    if (jobs_list[0].pid > 0) { //Hay proceso en foreground?
+        if (strcmp(jobs_list[0].cmd, mi_shell)) { // y no es la mini_shell
+            //eniviaremos la señal SIGTERM
+           kill(jobs_list[0].pid, SIGTERM);
+            //y lo notificamos
+        #if DEBUGN4
+         sprintf(mensaje,GRIS_T "[ctrlc()→ Señal %i (SIGTERM) enviada a %d (%s) por %d (%s)]\n" RESET, SIGTERM, jobs_list[0].pid, jobs_list[0].cmd, getpid(), mi_shell);
+        write(2, mensaje, strlen(mensaje)); //2 es el flujo stderr
+        #endif
+
+        }
+        else
+        { // Si es la mini_shell, no se debe abortar
+#if DEBUGN4
+
+          sprintf(mensaje,GRIS_T "[ctrlc()→ Señal %i (SIGTERM) no enviada por %d (%s) debido a que el proceso en foreground es el shell]\n" RESET, SIGTERM, getpid(), mi_shell);
+        write(2, mensaje, strlen(mensaje)); 
+#endif
+        }
+    } else {    //No hay proceso en foregroud
+#if DEBUGN4
+        sprintf(mensaje, GRIS_T "[ctrlc()→ Señal %i (SIGTERM) no enviada por %d (%s) debido a que no hay proceso en foreground]\n" RESET, SIGTERM, getpid(), mi_shell);
+        write(2, mensaje, strlen(mensaje)); 
+#endif
+    }
+    // Limpiamos nuestro flujo de salida
+    printf("\n");
+    fflush(stdout);
 }
 
 /*!*****************************************************************************
@@ -718,11 +735,13 @@ void ctrlc(int signum) {
  *Si es un comando externo lo ejecuta un proceso hijo.
  *@param signum número de la señal
  *******************************************************************************/
-void reaper(int signum){
+/*void reaper(int signum){
     signal(SIGCHLD, reaper);
     pid_t ended;
     int status;
+    #if DEBUGN4
     char mensaje[1200];
+    #endif
     while ((ended = waitpid(-1, &status, WNOHANG)) > 0){
         if (ended == jobs_list[0].pid) { // si el proceso esta en foreground
             #if DEBUGN4
@@ -767,8 +786,56 @@ void reaper(int signum){
         }
          fflush(stdout);
     }
-}
+}*/
 
+
+void reaper(int signum){
+    signal(SIGCHLD, reaper);
+    pid_t ended;
+    int status;
+    char mensaje[1200];
+    while ((ended = waitpid(-1, &status, WNOHANG)) > 0){
+        if (ended == jobs_list[0].pid) { // si el proceso esta en foreground
+            #if DEBUGN4
+            if (WIFEXITED(status)){     //proceso finalizado solo
+                sprintf(mensaje,GRIS_T "[reaper()→ Proceso hijo %d (%s) finalizado con exit code %d]\n"RESET, ended, jobs_list[0].cmd, WEXITSTATUS(status));
+            write(2, mensaje, strlen(mensaje)); //2 es el flujo stderr
+                //Proceso finalizado debido a una señal
+                }else if (WIFSIGNALED(status)){
+            printf(GRIS_T"[reaper()→ recibida señal 17 (SIGCHLD)]\n"RESET);
+            sprintf(mensaje,GRIS_T "[reaper()→ Proceso hijo %d (%s) finalizado por señal %d]\n"RESET, ended, jobs_list[0].cmd, WTERMSIG(status));
+            write(2, mensaje, strlen(mensaje)); 
+            }
+            #endif
+            //rastreamos los datos de jobs_list[0]
+            memset(jobs_list[0].cmd, '\0', COMMAND_LINE_SIZE);
+            jobs_list[0].pid = 0;
+            jobs_list[0].estado = 'F';
+      
+        }else if (ended>0){//proceso en background
+           int index = jobs_list_find(ended);
+            #if DEBUGN4
+         if (WIFEXITED(status)){
+            sprintf(mensaje,GRIS_T "\n[reaper()→ Proceso hijo %d (%s) en background finalizado con exit code %d]\n"RESET, ended, jobs_list[index].cmd, WEXITSTATUS(status));
+            write(2, mensaje, strlen(mensaje)); 
+                //si ha finalizado debido a una señal
+                }else if (WIFSIGNALED(status)){
+            sprintf(mensaje,GRIS_T "[reaper()→ Proceso hijo %d (%s) en background finalizadopor señal %d]\n"RESET, ended, jobs_list[index].cmd, WTERMSIG(status));
+            write(2, mensaje, strlen(mensaje)); 
+            }
+            #endif
+            sprintf(mensaje, "\nTerminado PID %d (%s) en jobs_list[%d] con status %d\n", ended, jobs_list[index].cmd, index, status);
+            write(2, mensaje, strlen(mensaje)); 
+            
+
+            jobs_list_remove(index);
+        }else if (ended == -1){
+            perror("Error");
+            
+        }
+         //fflush(stdout);
+    }
+}
 
 
 /*!*****************************************************************************
@@ -803,55 +870,45 @@ void ctrlz(int signum) {
     //asociamos de nuevo la señal al manejador ctrlz
     signal(SIGTSTP,ctrlz);
     char msg [3000];    
-    pid_t foreground_pid = jobs_list[0].pid;
     #if DEBUGN4
     fprintf(stderr, GRIS_T"\n[ctrlz()→ Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]\n" RESET,
-    getpid(), mi_shell, foreground_pid, jobs_list[0].cmd);
+    getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
     #endif
-    
-    #if DEBUGN6
-    fprintf(stderr,GRIS_T"\n[ctrlz()→ recibida señal %d (SIGTSTP)]\n"RESET,SIGTSTP);
-    #endif      
+    #if DEBUGN5
+    fprintf(stderr,GRIS_T"\n[ctrlz()→ recibida señal 20 (SIGTSTP)]\n"RESET);
+     #endif       
     if (jobs_list[0].pid > 0) {
         if (strcmp(jobs_list[0].cmd,mi_shell)){//no es nuestra shell
          kill(jobs_list[0].pid, SIGSTOP);
-
-         
             #if DEBUGN4
-            sprintf(msg,GRIS_T "[ctrlz()→ Señal %d enviada a %d (%s) por %d (%s)]\n" RESET, SIGSTOP, foreground_pid, jobs_list[0].cmd, getpid(), mi_shell);
+            sprintf(msg,GRIS_T "[ctrlz()→ Señal %d enviada a %d (%s) por %d (%s)]\n" RESET, SIGSTOP, jobs_list[0].pid, jobs_list[0].cmd, getpid(), mi_shell);
             write(2, msg, strlen(msg)); 
-           // printf(GRIS_T "[ctrlz()→ Señal %d enviada a %d (%s) por %d (%s)]\n" RESET, SIGSTOP, foreground_pid, jobs_list[0].cmd, getpid(), mi_shell);
             #endif
             jobs_list[0].estado = 'D';
             jobs_list_add(jobs_list[0].pid, 'D', jobs_list[0].cmd);
-            printf("\n[%d] %d \t%c \t%s \n", n_job, jobs_list[0].pid, jobs_list[0].estado, jobs_list[0].cmd);
-           // sprintf(msg, "\n[%d] %d \t%c \t%s \n", n_job, jobs_list[0].pid, jobs_list[0].estado, jobs_list[0].cmd);
-            //write(2, msg, strlen(msg)); 
-            
+            sprintf(msg,"\n[%i] %i \t%c \t%s \n", n_job, jobs_list[n_job].pid, jobs_list[n_job].estado, jobs_list[n_job].cmd);
+            write(2, msg, strlen(msg));
+           // fprintf(stderr,"[%i] %i \t%c \t%s \n", n_job, jobs_list[n_job].pid, jobs_list[n_job].estado, jobs_list[n_job].cmd);
            //rastrear los datos de jobs_list[0]
+            memset(jobs_list[0].cmd, '\0', COMMAND_LINE_SIZE);
             jobs_list[0].pid = 0;
             jobs_list[0].estado = 'F';
-            memset(jobs_list[0].cmd, '\0', sizeof(jobs_list[0].cmd));
-
         } else {
-                #if DEBUGN5
+            #if DEBUGN4    
             sprintf(msg,GRIS_T "[ctrlz()→ Señal %i no enviada por %d (%s) debido a que su proceso en foreground es el shell]\n"RESET,  SIGSTOP, getpid(), mi_shell);
             write(2, msg, strlen(msg)); 
             #endif
-            //fprintf(stderr,GRIS_T"[ctrlz()→ Señal %i no enviada por %d (%s) debido a que el proceso en foreground es el shell]\n" RESET, SIGSTOP, getpid(), mi_shell);                
         }
     } else {
-         #if DEBUGN5
+        #if DEBUGN4
          sprintf(msg,GRIS_T "[ctrlz()→ Señal %d no enviada por %d (%s) debido a que no hay proceso en foreground]\n" RESET,  SIGSTOP, getpid(), mi_shell);
             write(2, msg, strlen(msg)); 
-       // fprintf(stderr, GRIS_T "[ctrlz()→ Señal %d no enviada por %d (%s) debido a que no hay proceso en foreground]\n" RESET, SIGSTOP, getpid(), mi_shell);
-       #endif
+            #endif
     }
 
     printf("\n");
     fflush(stdout);
 }
-
 
 /*!*****************************************************************************
  * @brief Función que determina si un proceso es de primer plano.
