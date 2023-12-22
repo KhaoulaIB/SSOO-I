@@ -77,7 +77,6 @@ struct info_job{
 
 };
 
-int BACKGROUND  = 1;
 
 int n_job =0;
 static struct info_job jobs_list [N_JOBS]; 
@@ -195,21 +194,20 @@ int execute_line(char *line) {
                 signal(SIGINT, SIG_IGN);
                 is_output_redirection(args);
                 execvp(args[0], args);
-                perror("execvp");
+                perror(ROJO_T"execvp");
+                printf(RESET);
                // fprintf(stderr,"%s : comando inexistente\n"RESET,args[0]);
                 fflush(stderr);
                 exit(EXIT_FAILURE);
             }else if(pid > 0){
                 //proceso en background
                 if (background==1){
-                  //  BACKGROUND=1;   //reinciar el valor
                  #if DEBUGN5
                     printf(GRIS_T"Es un proceso en backgroud\n"RESET);
                     #endif       
                 //printf("la linea de coadno que se copiara en cmd %s",tmp);
                 jobs_list_add(pid,'E',tmp);
                 printf("[%d] %d \t%c \t%s \n", n_job, jobs_list[n_job].pid, jobs_list[n_job].estado, jobs_list[n_job].cmd);
-                //BACKGROUND++;
               
                 #if DEBUGN3
                 int status;
@@ -311,7 +309,7 @@ int internal_cd(char **args) {
     }
 
     if (chdir(target_dir) != 0) {
-        perror(ROJO_T"chdir() error");
+        perror(ROJO_T"chdir");
         return EXIT_FAILURE;
     }
     
@@ -566,11 +564,11 @@ int internal_bg(char **args){
 
     int pos = atoi(args[1]);
     if(pos == 0 || pos > n_job ){
-        fprintf(stderr, ROJO_T "bg: no existe ese trabajo\n" RESET);
+        fprintf(stderr, ROJO_T "bg %i: no existe ese trabajo\n" RESET,pos);
         return EXIT_FAILURE;
     }
     if(jobs_list[pos].estado == 'E'){
-        fprintf(stderr, ROJO_T "bg: el trabajo ya está en segundo plano\n" RESET);
+        fprintf(stderr, ROJO_T "bg %i: el trabajo ya está en segundo plano\n" RESET,pos);
         return EXIT_FAILURE;
     }
 
@@ -614,18 +612,24 @@ int internal_fg(char **args){
 
     int pos = atoi(args[1]);
     if (pos>n_job || pos == 0){
-        printf(GRIS_T"No existe este trabajo\n"RESET);
+        fprintf(stderr, ROJO_T "fg %i: no existe ese trabajo\n" RESET,pos);
+
         return EXIT_FAILURE;
     }else{
 
         if(jobs_list[pos].estado=='D'){
             //enviamos la señal SIGCONT
-            kill(jobs_list[pos].pid,SIGCONT);
+           if( kill(jobs_list[pos].pid,SIGCONT)<0){
+            perror(ROJO_T "Error kill");
+            printf(RESET);
+           }
             #if DEBUGN6
-            printf(GRIS_T"\n[internal_fg()→ Señal 18 (SIGCONT) enviada al proceso con PID %i]\n"RESET,jobs_list[pos].pid);
+            fprintf(stderr,GRIS_T"\n[internal_fg()→ Señal 18 (SIGCONT) enviada al proceso con PID %i]\n"RESET,jobs_list[pos].pid);
             #endif
+            jobs_list[pos].estado='E';
         }
-            BorrarChar(jobs_list[pos].cmd,'&');
+        if (jobs_list[pos].estado=='E'){
+            BorrarChar(jobs_list[pos].cmd,'&');}
             //copiar los datos a job_list[0]
             jobs_list[0].estado=jobs_list[pos].estado;
             jobs_list[0].pid=jobs_list[pos].pid;
@@ -657,9 +661,9 @@ int internal_fg(char **args){
 
 void ctrlc(int signum) {
     signal(SIGINT,ctrlc);
+    #if DEBUGN4
     char mensaje[3000];
-#if DEBUGN4
-    printf(GRIS_T "\n[ctrlc()→ Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]\n" RESET,
+    fprintf(stderr, "\n[ctrlc()→ Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]\n" RESET,
            getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
 #endif
 #if DEBUGN5
@@ -670,6 +674,7 @@ void ctrlc(int signum) {
         if (strcmp(jobs_list[0].cmd, mi_shell)) { // y no es la mini_shell
             //eniviaremos la señal SIGTERM
            kill(jobs_list[0].pid, SIGTERM);
+           
             //y lo notificamos
         #if DEBUGN4
          sprintf(mensaje,GRIS_T "[ctrlc()→ Señal %i (SIGTERM) enviada a %d (%s) por %d (%s)]\n" RESET, SIGTERM, jobs_list[0].pid, jobs_list[0].cmd, getpid(), mi_shell);
@@ -790,6 +795,7 @@ int internal_jobs(char **args) {
  * @brief manejador proprio de la señal SIGTSTP.
  * @param signum : número de señal que recibe 
  *******************************************************************************/
+
 void ctrlz(int signum) {
     //asociamos de nuevo la señal al manejador ctrlz
     signal(SIGTSTP,ctrlz);
@@ -805,7 +811,8 @@ void ctrlz(int signum) {
      #endif       
     if (jobs_list[0].pid > 0) {
         if (strcmp(jobs_list[0].cmd,mi_shell)){//no es nuestra shell
-         kill(jobs_list[0].pid, SIGSTOP);
+          kill(jobs_list[0].pid, SIGSTOP);
+           
             #if DEBUGN4
             sprintf(msg,GRIS_T "[ctrlz()→ Señal %d enviada a %d (%s) por %d (%s)]\n" RESET, SIGSTOP, jobs_list[0].pid, jobs_list[0].cmd, getpid(), mi_shell);
             write(2, msg, strlen(msg)); 
@@ -885,7 +892,8 @@ int jobs_list_add(pid_t pid, char estado, char *cmd){
     jobs_list[n_job].estado=estado;
     jobs_list[n_job].pid=pid;
     strcpy(jobs_list[n_job].cmd, cmd);
-
+    sleep(0.5); //esperar hasta que agrega el proceso
+    
         return TRUE;
     }else {
       fprintf(stderr, ROJO_T NEGRITA"Se ha alcanzado el número máximo de procesos permitidos!");
