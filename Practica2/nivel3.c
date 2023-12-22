@@ -47,7 +47,7 @@ void BorrarChar(char * palabra, char c);
 
 struct info_job{
     pid_t pid;
-    char estado; // ‘N’, ’E’, ‘D’, ‘F’ 
+    char estado; 
     //(‘N’: Ninguno,‘E’: Ejecutándose, ‘D’: Detenido, F: Finalizado) 
     char cmd[COMMAND_LINE_SIZE];
 
@@ -413,9 +413,6 @@ int parse_args(char **args, char *line) {
     }
     return numTokens;
 }
-
-
-
 
 
 
