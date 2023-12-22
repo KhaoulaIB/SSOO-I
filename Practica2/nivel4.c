@@ -1,4 +1,3 @@
-
 #define _POSIX_C_SOURCE 200112L
 #include <unistd.h>
 #include <stdio.h>
@@ -16,11 +15,12 @@
 #define DEBUGN2 0
 #define DEBUGN3 0
 #define DEBUGN4 1
-#define SIGCHLD 17
+
 #define SIGINT 2
 #define SIGKILL 9
-#define SIGSTOP 19
 #define SIGTERM 15
+#define SIGCHLD 17
+#define SIGSTOP 19
 #define SIGTSTP 20
 #define SUCCES 0
 #define FAILURE -1
@@ -142,8 +142,8 @@ char *read_line(char *line) {
 int execute_line(char *line)
 {
     char **args = malloc(sizeof(char *) * ARGS_SIZE);
-    char tmp[COMMAND_LINE_SIZE] = "";  // Reinicializa tmp en cada iteración
-        
+    char tmp[COMMAND_LINE_SIZE] = "";  
+
     // parsea la línea en argumentos
     if (parse_args(args, line) > 0)
     {
@@ -174,7 +174,9 @@ int execute_line(char *line)
                 signal(SIGINT, SIG_IGN);
 
                 execvp(args[0], args);
-                fprintf(stderr, ROJO_T"%s : comando inexistente\n" RESET, args[0]);
+                perror(ROJO_T "execvp");
+                printf(RESET);
+                //fprintf(stderr, ROJO_T"%s : comando inexistente\n" RESET, args[0]);
                 fflush(stderr);
                 exit(EXIT_FAILURE);
             }
@@ -451,52 +453,14 @@ int parse_args(char **args, char *line) {
  *@return 0
  *******************************************************************************/
 
-/*void ctrlc(int signum) {
-    signal(SIGINT,ctrlc);
-#if DEBUGN4
-    printf(GRIS_T "\n[ctrlc()→ Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]\n" RESET,
-           getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
-#endif
-#if DEBUGN5
-    fprintf(stderr,"\n[ctrlc()→ recibida señal 2 (SIGINT)]\n"RESET);
-#endif
-
-    if (jobs_list[0].pid > 0) { //Hay proceso en foreground?
-        if (strcmp(jobs_list[0].cmd, mi_shell)) { // y no es la mini_shell
-            //eniviaremos la señal SIGTERM
-           kill(jobs_list[0].pid, SIGTERM);
-            //y lo notificamos
-        #if DEBUGN4
-        fprintf(stderr, GRIS_T "[ctrlc()→ Señal %i (SIGTERM) enviada a %d (%s) por %d (%s)]\n" RESET, SIGTERM, jobs_list[0].pid, jobs_list[0].cmd, getpid(), mi_shell);
-        #endif
-
-        }
-        else
-        { // Si es la mini_shell, no se debe abortar
-#if DEBUGN4
-            fprintf(stderr, GRIS_T "[ctrlc()→ Señal %i (SIGTERM) no enviada por %d (%s) debido a que el proceso en foreground es el shell]\n" RESET, SIGTERM, getpid(), mi_shell);
-#endif
-        }
-    } else {    //No hay proceso en foregroud
-#if DEBUGN4
-        fprintf(stderr, GRIS_T "[ctrlc()→ Señal %i (SIGTERM)no enviada por %d (%s) debido a que no hay proceso en foreground]\n" RESET, SIGTERM, getpid(), mi_shell);
-#endif
-    }
-    // Limpiamos nuestro flujo de salida
-    printf("\n");
-    fflush(stdout);
-}*/
-
 
 void ctrlc(int signum) {
     signal(SIGINT,ctrlc);
 #if DEBUGN4
-    printf(GRIS_T "\n[ctrlc()→ Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]\n" RESET,
+    fprintf(stderr, "\n[ctrlc()→ Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]\n" RESET,
            getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
 #endif
-#if DEBUGN5
-    fprintf(stderr,"\n[ctrlc()→ recibida señal 2 (SIGINT)]\n"RESET);
-#endif
+
 
     if (jobs_list[0].pid > 0) { //Hay proceso en foreground?
         if (strcmp(jobs_list[0].cmd, mi_shell)) { // y no es la mini_shell
@@ -527,7 +491,7 @@ void ctrlc(int signum) {
 
 /*!*****************************************************************************
  * @brief Función que maneja la terminación de procesos hijos. 
- *@param signum : numero de la señal
+ *@param signum : número de la señal
  *@return 0
  *******************************************************************************/
 
