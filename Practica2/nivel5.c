@@ -1,3 +1,4 @@
+
 #define _POSIX_C_SOURCE 200112L
 #include <stdio.h>
 #include <string.h>
@@ -532,9 +533,9 @@ int internal_fg(char **args){
 
 void ctrlc(int signum) {
     signal(SIGINT,ctrlc);
+    #if DEBUGN4
     char mensaje[3000];
-#if DEBUGN4
-    printf(GRIS_T "\n[ctrlc()→ Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]\n" RESET,
+    fprintf(stderr, "\n[ctrlc()→ Soy el proceso con PID %d (%s), el proceso en foreground es %d (%s)]\n" RESET,
            getpid(), mi_shell, jobs_list[0].pid, jobs_list[0].cmd);
 #endif
 #if DEBUGN5
@@ -681,7 +682,8 @@ void ctrlz(int signum) {
      #endif       
     if (jobs_list[0].pid > 0) {
         if (strcmp(jobs_list[0].cmd,mi_shell)){//no es nuestra shell
-         kill(jobs_list[0].pid, SIGSTOP);
+          kill(jobs_list[0].pid, SIGSTOP);
+           
             #if DEBUGN4
             sprintf(msg,GRIS_T "[ctrlz()→ Señal %d enviada a %d (%s) por %d (%s)]\n" RESET, SIGSTOP, jobs_list[0].pid, jobs_list[0].cmd, getpid(), mi_shell);
             write(2, msg, strlen(msg)); 
@@ -712,7 +714,6 @@ void ctrlz(int signum) {
     printf("\n");
     fflush(stdout);
 }
-
 
 /*!*****************************************************************************
  * @brief Función que determina si un proceso es de primer plano.
@@ -762,6 +763,7 @@ int jobs_list_add(pid_t pid, char estado, char *cmd){
     jobs_list[n_job].estado=estado;
     jobs_list[n_job].pid=pid;
     strcpy(jobs_list[n_job].cmd, cmd);
+    sleep(0.5); //esperar hasta que agrega el proceso
 
         return TRUE;
     }else {
