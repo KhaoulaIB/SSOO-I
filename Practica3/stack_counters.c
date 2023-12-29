@@ -23,11 +23,11 @@ void *worker(void *ptr){
     for (int i = 0; i<N; i++){
 
     pthread_mutex_lock(&mutex); 
-    int tmp =my_stack_pop();
+    int *data =my_stack_pop(pila);
     pthread_mutex_unlock(&mutex);
-    tmp++; 
+    (*data)++; 
     pthread_mutex_lock(&mutex);
-    my_stack_push(pila,tmp);
+    my_stack_push(pila,data);
     pthread_mutex_unlock(&mutex);
     }
 
