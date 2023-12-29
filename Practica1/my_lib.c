@@ -241,6 +241,10 @@ Devuelve el numero de nodos de la pila
 
 int my_stack_len(struct my_stack *stack)
 {
+
+ if (stack==NULL){
+  return 0; //Pila vacía
+ }
     // inicializar el contador
     int contador = 0;
     // puntero al elemento top del stack
@@ -268,6 +272,9 @@ int my_stack_purge(struct my_stack *stack)
     int BytesLiberados = sizeof(struct my_stack); //tamaño de la pila
     struct my_stack_node *current = stack->top;
 
+   if(stack == NULL){ //pila vacía
+    return 0;
+   }
     while (current)
     {
         // Incrementa BytesLiberados por el tamaño de struct my_stack_node y el tamaño del dato
@@ -308,14 +315,14 @@ int my_stack_write(struct my_stack *stack, char *filename)
     int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd == -1)
     {
-        fprintf(stderr, "Error al abrir el fichero");
+        perror("Error al abrir el fichero");
         return -1;
     }
 
 // escribri el tamaño de los datos en el fichero
     if (write(fd, &stack->size, sizeof(stack->size)) < 0)
     { 
-        fprintf(stderr, "Error al escribir el tamaño en el fichero");
+        perror("Error al escribir el tamaño en el fichero");
         return -1;
     }
 
@@ -325,7 +332,7 @@ int my_stack_write(struct my_stack *stack, char *filename)
         int bytes = write(fd, my_stack_pop(aux), stack->size);
         if (bytes < 0)
         {
-            fprintf(stderr, "Error al escribir datos");
+            perror("Error al escribir datos");
             close(fd);
             return -1;
         }
@@ -333,7 +340,10 @@ int my_stack_write(struct my_stack *stack, char *filename)
         n++; //incrementar el numero de elementos almacenados
     }
 
-    close(fd); // cerrar el fichero
+    if (close(fd)<0){ // cerrar el fichero
+     perror("Error al cerrar el fichero);
+      return -1;
+      }
     // librar la pila auxiliar
     free(aux);
     // Devolver el numero de bytes almacenados
@@ -350,7 +360,8 @@ struct my_stack *my_stack_read(char *filename)
     int fd = open(filename, O_RDONLY, S_IRUSR | S_IWUSR);
     if (fd < 0)
     {
-        fprintf(stderr, "Se ha prodocido un error al abrir el fichero: ");
+        perror("Se ha prodocido un error al abrir el fichero");
+        close(fd);
         return NULL;
     }
     int size;
@@ -358,14 +369,14 @@ struct my_stack *my_stack_read(char *filename)
 
     if (read(fd, &size, sizeof(int)) < 0)
     {
-        fprintf(stderr, "Error al leer el tamaño de los datos. \n");
+        perror("Error al leer el tamaño de los datos");
         close(fd);
         return NULL;
     }
     // incializar el stack
     struct my_stack *Stack = my_stack_init(size);
     if (!Stack){
-        fprintf(stderr, "No se pudo inicializar la pila \n");
+        perror("No se pudo inicializar la pila");
         close(fd);
         return NULL;
 
@@ -374,14 +385,15 @@ struct my_stack *my_stack_read(char *filename)
     void *data = malloc(size);
     if (data < 0)
     {
-        fprintf(stderr, "Espacio insuficiente en la memoria \n.");
+        perror("Espacio insuficiente en la memoria");
+       close(fd);
         return NULL;
     }
     while (read(fd, data, size) > 0)
     {
         // agregamos el dato a la pila
        if ( my_stack_push(Stack, data)<0){
-        fprintf(stderr, "No se pudo agregar un elemento a la pila");
+        perror("No se pudo agregar un elemento a la pila");
             close(fd);
             free(data);
             my_stack_purge(Stack);
@@ -393,7 +405,7 @@ struct my_stack *my_stack_read(char *filename)
         // verificar que no se ha producido ningun error
         if (data < 0)
         {
-            fprintf(stderr, "Espacio insuficiente en la memoria.");
+            perror("Espacio insuficiente en la memoria");
             return NULL;
         }
     }
@@ -401,7 +413,7 @@ struct my_stack *my_stack_read(char *filename)
     // cerrar el fichero y verificar que se ha cerrado correctamente
     if (close(fd) <0)
     {
-        fprintf(stderr, "El fichero no se ha cerrado correctamente ");
+        perror("El fichero no se ha cerrado correctamente");
         return NULL;
     }
     //liberar el espacio del puntero
