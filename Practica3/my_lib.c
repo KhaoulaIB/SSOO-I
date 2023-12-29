@@ -156,7 +156,7 @@ struct my_stack *my_stack_init(int size)
     // Reservar espacio para variable de tipo struct my_stack
     struct my_stack *stack = malloc(sizeof(struct my_stack)); 
     if (!stack){
-        fprintf(stderr,"Out of memory");
+        perror("Out of memory");
     }
     stack->size = size;
     stack->top = NULL; // el top inicialemnte apunta a NULL
@@ -176,7 +176,7 @@ int my_stack_push(struct my_stack *stack, void *data)
     // Comprobación 1: Verifica si la pila no es nula y el tamaño es positivo
     if (!stack || stack->size <= 0)
     {
-        fprintf(stderr,"Pila no válida ");
+        perror("Pila no válida");
         return -1; 
     }
 
@@ -185,7 +185,7 @@ int my_stack_push(struct my_stack *stack, void *data)
     // Comprobación 2: Verifica si la asignación de memoria fue exitosa
     if (!nuevo_nodo)
     {
-        fprintf(stderr, "Out of memory.\n");
+        perror("Out of memory");
         return -1;
     }
 
@@ -213,7 +213,7 @@ void *my_stack_pop(struct my_stack *stack)
 {
     if (stack == NULL || stack->top == NULL)
     {
-        fprintf(stderr,"Pila vacía");
+        perror("Pila vacía");
         return NULL; 
     }
 
