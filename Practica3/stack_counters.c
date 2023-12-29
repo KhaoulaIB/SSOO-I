@@ -30,6 +30,7 @@ void *worker(void *ptr){
     int *data = (int *) mallorc(sizeof(int));
         if (!data){
             perror("Memoria insuficiente");
+            pthread_exit(NULL);//salir de la función
         }
     data = my_stack_pop(pila);
     pthread_mutex_unlock(&mutex);
