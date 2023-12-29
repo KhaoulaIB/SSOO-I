@@ -9,6 +9,9 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 void *worker(void *ptr);
 
 struct my_stack *pila;
+//semaforo global
+sem_t semaforo;
+
 
 /**
 *Metodo que suma 1 al último valor de la pila.
@@ -21,14 +24,21 @@ void *worker(void *ptr){
     }
     //añadir control de errores
     for (int i = 0; i<N; i++){
-
+    // Esperar a que el semáforo esté disponible
+    sem_wait(&semaforo);    
     pthread_mutex_lock(&mutex); 
-    int *data =my_stack_pop(pila);
+    int *data = (int *) mallorc(sizeof(int));
+        if (!data){
+            perror("Memoria insuficiente");
+        }
+    data = my_stack_pop(pila);
     pthread_mutex_unlock(&mutex);
     (*data)++; 
     pthread_mutex_lock(&mutex);
     my_stack_push(pila,data);
     pthread_mutex_unlock(&mutex);
+    // Liberar el semáforo para indicar que la sección crítica ha terminado
+        sem_post(&semaforo);    
     }
 
     pthread_exit(NULL);//salir de la función
