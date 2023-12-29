@@ -7,8 +7,14 @@
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; 
 //funciones
 void *worker(void *ptr);
+
 struct my_stack *pila;
 
+/**
+*Metodo que suma 1 al último valor de la pila.
+Asegura la exclusión mutua.
+*@param ptr puntero a void. No lo usamos
+*/
 void *worker(void *ptr){
     if (!pila){
         perror("out of memory");
