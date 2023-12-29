@@ -10,6 +10,9 @@ void *worker(void *ptr);
 struct my_stack *pila;
 
 void *worker(void *ptr){
+    if (!pila){
+        perror("out of memory");
+    }
     //añadir control de errores
     for (int i = 0; i<N; i++){
 
