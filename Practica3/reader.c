@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
    stack = my_stack_read(argv[1]);
     //comprobar que la pila no esté vacía
     if (!stack){
-        fprintf(stderr, "Fichero vacío\n", argv[1]);
+        fprintf(stderr, "El fichero %s está vacío\n", argv[1]);
         return EXIT_FAILURE;
     }
     
