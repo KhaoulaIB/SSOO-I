@@ -12,7 +12,12 @@ int main(int argc, char* argv[]) {
     struct my_stack *stack;//crear una pila que contedrá los datos del fichero    
     // Reconstruir la pila en memoria desde el fichero
    stack = my_stack_read(argv[1]);
-
+    //comprobar que la pila no esté vacía
+    if (!stack){
+        fprintf(stderr, "Fichero vacío\n", argv[1]);
+        return EXIT_FAILURE;
+    }
+    
     int stack_len = my_stack_len(stack);
     printf("Stack length: %d\n", stack_len);
 
