@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
     int min = INT_MAX;
     int max = INT_MIN;
 
-    for (int i = 0; i < stack_len; ++i) {
+    for (int i = 0; i < NUM_THREADS; ++i) {    //solo se imprimiran los primeros 10 elementos
         int* element = my_stack_pop(stack);
         printf("%d ", *element);
 
