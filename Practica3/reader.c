@@ -9,11 +9,11 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Sintaxis incorrecta. Uso: %s <nombre_del_fichero>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
-
+    struct my_stack *stack;//crear una pila que contedrá los datos del fichero    
     // Reconstruir la pila en memoria desde el fichero
-    my_stack_read(argv[1]);
+   stack = my_stack_read(argv[1]);
 
-    int stack_len = my_stack_len();
+    int stack_len = my_stack_len(stack);
     printf("Stack length: %d\n", stack_len);
 
     int sum = 0;
@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
     int max = INT_MIN;
 
     for (int i = 0; i < stack_len; ++i) {
-        int* element = my_stack_read();
+        int* element = my_stack_pop(stack);
         printf("%d ", *element);
 
         sum += *element;
