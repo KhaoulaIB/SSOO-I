@@ -7,7 +7,7 @@ int main(int argc, char* argv[]) {
     // Verificar si se proporcionó el nombre del fichero
     if (argc != 2) {
         fprintf(stderr, "Sintaxis incorrecta. Uso: %s <nombre_del_fichero>\n", argv[0]);
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
     struct my_stack *stack;//crear una pila que contedrá los datos del fichero    
     // Reconstruir la pila en memoria desde el fichero
@@ -39,5 +39,5 @@ int main(int argc, char* argv[]) {
 
     printf("\nSum: %d Min: %d Max: %d Average: %lf\n", sum, min, max, media);
 
-    return 0;
+    return EXIT_SUCCESS;
 }
