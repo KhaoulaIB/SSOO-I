@@ -8,10 +8,15 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 //funciones
 void *worker(void *ptr);
 
+//Preparar la pila
+
+//Crear los hilos
+
+
+
 struct my_stack *pila;
 //semaforo global
 sem_t semaforo;
-
 
 /**
 *Metodo que suma 1 al último valor de la pila.
