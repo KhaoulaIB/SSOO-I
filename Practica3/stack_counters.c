@@ -16,6 +16,7 @@ struct my_stack *pila;
 void *worker(void *ptr);
 void stack_init(char *file);
 void rellenarPila();
+void copyStack(struct my_stack* destination);
 
 
 /**
@@ -37,7 +38,6 @@ int main(int argc, char *argv[])
     // Verificar si la pila ya existe
     pila = my_stack_read(argv[1]);
     printf("Threads: %d, Iterations: %d\n", NUM_THREADS, N);
-
     stack_init(argv[1]);
 
     // Crear los hilos
@@ -56,12 +56,24 @@ int main(int argc, char *argv[])
         pthread_join(threads[i], NULL);
     }
 
-    printf("stack content after threads iterations\n");
+    printf("\nstack content after threads iterations:\n");
+    //pila auxiliar para imprimir nuestra pila
+    struct my_stack* aux = my_stack_init(sizeInt);
+    copyStack(aux);//copiamos el contenido de la pila en aux
 
+    while(my_stack_len(aux)>0){
+        int * valor = malloc(sizeInt);
+        valor = my_stack_pop(aux);
+        printf("%i\n",*valor);
+    }
+    //liberamos la memoria.
+    my_stack_purge(aux);
+
+    printf("stack length: %i\n",my_stack_len(pila));
     // Volcar la pila en un fichero
     int elements_written = my_stack_write(pila, argv[1]);
-    printf("Written elements from stack to file: %d\n", elements_written);
-
+    printf("\nWritten elements from stack to file: %d\n", elements_written);
+    
     // Liberar la memoria de la pila
     int bytes_released = my_stack_purge(pila);
     printf("Released bytes: %d\n", bytes_released);
@@ -76,15 +88,26 @@ int main(int argc, char *argv[])
 
 
 void stack_init(char* file){
-    pila = my_stack_read(file);
     if (!pila){//si la pila no existe, la creamos
         pila = my_stack_init(sizeInt);
-        printf("size of inicialized stack :  %i\n",pila->size);
-
     }
     
     if (my_stack_len(pila)<NUM_THREADS){
         rellenarPila();
+    }
+
+
+}
+
+void copyStack(struct my_stack* destination){
+
+//struct my_stack *aux = my_stack_init(sizeInt); // Inicializa la pila auxiliar
+    struct my_stack_node *current = pila->top;
+    //copiar los elementos de la pila en aux en el mismo orden
+    while (current)
+    {                                      // mientras hay elementos en la pila
+        my_stack_push(destination, current->data); // Copia el elemento top en la pila aux
+        current = current->next;           // Avanza al siguiente elemento en la pila original
     }
 
 
@@ -114,7 +137,7 @@ void rellenarPila(){
 
         printf("initial stack length: %i\n",pos);
 
-        printf("initial stack content:\n");
+        printf("original stack content:\n");
 
         //mostrar el contenido inicial de la pila
         while (my_stack_len(aux)>0){
@@ -129,6 +152,7 @@ void rellenarPila(){
 
 
         //rellenar la pila hasta NUM_THREADS elementos
+        int added =0;
         while (my_stack_len(pila)<NUM_THREADS){
             data =(int*) malloc(sizeInt);
             if (!data){
@@ -137,7 +161,9 @@ void rellenarPila(){
             }
             //rellenamos los elementos que faltan 
            * data = 0;
+
             my_stack_push(pila,data);
+            added++;
         }
 
         //imprimir la nueva pila despues del relleno
@@ -152,8 +178,9 @@ void rellenarPila(){
         my_stack_push(aux, current->data); // Copia el elemento top en la pila aux
         current = current->next;           // Avanza al siguiente elemento en la pila original
     }
+    printf("Number of elements added to inital stack: %i\n",added);
 
- printf("initial stack content for treatment:\n");
+    printf("initial stack content for treatment:\n");
         while (my_stack_len(aux)>0){
             data = (int*)malloc(sizeInt);
             if (!data){
@@ -169,6 +196,9 @@ void rellenarPila(){
 
 
 }
+
+
+
 
 
 /**
