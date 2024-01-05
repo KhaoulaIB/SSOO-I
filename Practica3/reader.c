@@ -2,34 +2,36 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include "my_lib.h"
+#define NUM_THREADS 10
 
 int main(int argc, char* argv[]) {
     // Verificar si se proporcionó el nombre del fichero
-    if (argc != 2) {
-        fprintf(stderr, "Sintaxis incorrecta. Uso: %s <nombre_del_fichero>\n", argv[0]);
+    if (!argv[1]) {
+        fprintf(stderr, "USAGE: %s <stack_file>\n", argv[0]);
         return EXIT_FAILURE;
     }
-    struct my_stack *stack;//crear una pila que contedrá los datos del fichero    
     // Reconstruir la pila en memoria desde el fichero
-   stack = my_stack_read(argv[1]);
+   struct my_stack *stack = my_stack_read(argv[1]);
     //comprobar que la pila no esté vacía
     if (!stack){
-        fprintf(stderr, "El fichero %s está vacío\n", argv[1]);
+        perror("Couldn't open stack file s");
         return EXIT_FAILURE;
     }
     
     int stack_len = my_stack_len(stack);
     printf("Stack length: %d\n", stack_len);
-
+    int items = 0;    
     int sum = 0;
     int min = INT_MAX;
     int max = INT_MIN;
 
     for (int i = 0; i < NUM_THREADS; ++i) {    //solo se imprimiran los primeros 10 elementos
-        int* element = my_stack_pop(stack);
-        printf("%d ", *element);
+        int *element = my_stack_pop(stack);
+        printf("%d\n", *element);
 
         sum += *element;
+        items++;
       
         if (*element < min) {
             min = *element;
@@ -40,9 +42,10 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    double media = (double)sum / stack_len;
+    int media = sum / items;
 
-    printf("\nSum: %d Min: %d Max: %d Average: %lf\n", sum, min, max, media);
-
+    printf("\nItems: %i Sum: %d Min: %d Max: %d Average: %i\n", items, sum, min, max, media);
+    //liberar memoria
+    my_stack_purge(stack);
     return EXIT_SUCCESS;
 }
