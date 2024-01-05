@@ -44,9 +44,7 @@ int main(int argc, char *argv[])
     pthread_t threads[NUM_THREADS];
 
     for (int i = 0; i < NUM_THREADS; i++)
-    {
-        //thread_ids[i] = i;
-        pthread_create(&threads[i], NULL, worker, NULL);
+    {        pthread_create(&threads[i], NULL, worker, NULL);
         printf("%d) Thread %ld created\n", i,threads[i]);
     }
 
@@ -56,22 +54,28 @@ int main(int argc, char *argv[])
         pthread_join(threads[i], NULL);
     }
 
-    printf("\nstack content after threads iterations:\n");
-    //pila auxiliar para imprimir nuestra pila
-    struct my_stack* aux = my_stack_init(sizeInt);
-    copyStack(aux);//copiamos el contenido de la pila en aux
 
+    printf("\nstack content after threads iterations:\n");
+    //pila auxiliar para imprimir nuestra pila compartida
+    struct my_stack* aux = my_stack_init(sizeInt);
+    //copyStack(aux);//copiamos el contenido de la pila en aux
+
+    // Volcar la pila en un fichero
+    int elements_written = my_stack_write(pila, argv[1]);
+    //copiamos la pila original en aux y moestramos su contenido
+    aux = my_stack_read(argv[1]);
     while(my_stack_len(aux)>0){
         int * valor = malloc(sizeInt);
         valor = my_stack_pop(aux);
         printf("%i\n",*valor);
     }
-    //liberamos la memoria.
+    //liberamos la memoria
     my_stack_purge(aux);
 
     printf("stack length: %i\n",my_stack_len(pila));
-    // Volcar la pila en un fichero
-    int elements_written = my_stack_write(pila, argv[1]);
+
+      
+
     printf("\nWritten elements from stack to file: %d\n", elements_written);
     
     // Liberar la memoria de la pila
@@ -103,7 +107,6 @@ void copyStack(struct my_stack* destination){
 
 //struct my_stack *aux = my_stack_init(sizeInt); // Inicializa la pila auxiliar
     struct my_stack_node *current = pila->top;
-    //copiar los elementos de la pila en aux en el mismo orden
     while (current)
     {                                      // mientras hay elementos en la pila
         my_stack_push(destination, current->data); // Copia el elemento top en la pila aux
