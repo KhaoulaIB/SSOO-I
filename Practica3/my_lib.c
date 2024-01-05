@@ -360,7 +360,7 @@ struct my_stack *my_stack_read(char *filename)
     int fd = open(filename, O_RDONLY, S_IRUSR | S_IWUSR);
     if (fd < 0)
     {
-        perror("Se ha prodocido un error al abrir el fichero");
+       // perror("Se ha prodocido un error al abrir el fichero");
         close(fd);
         return NULL;
     }
