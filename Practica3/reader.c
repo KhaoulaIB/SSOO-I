@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
     int min = INT_MAX;
     int max = INT_MIN;
 
-    for (int i = 0; i < NUM_THREADS; ++i) {    //solo se imprimiran los primeros 10 elementos
+    for (int i = 0; i < NUM_THREADS; i++) {    //solo se imprimiran los primeros 10 elementos
         int *element = my_stack_pop(stack);
         printf("%d\n", *element);
 
@@ -47,5 +47,6 @@ int main(int argc, char* argv[]) {
     printf("\nItems: %i Sum: %d Min: %d Max: %d Average: %i\n", items, sum, min, max, media);
     //liberar memoria
     my_stack_purge(stack);
+   
     return EXIT_SUCCESS;
 }
