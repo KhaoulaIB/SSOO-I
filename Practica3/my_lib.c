@@ -320,7 +320,7 @@ int my_stack_write(struct my_stack *stack, char *filename)
     }
 
 // escribri el tamaño de los datos en el fichero
-    if (write(fd, &stack->size, sizeof(stack->size)) < 0)
+    if (write(fd, &aux->size, sizeof(aux->size)) < 0)
     { 
         perror("Error al escribir el tamaño en el fichero");
         return -1;
@@ -329,7 +329,7 @@ int my_stack_write(struct my_stack *stack, char *filename)
     int n = 0;
     while (aux->top){
         //escribir dato por dato en filname aprovechando el pop de la pila
-        int bytes = write(fd, my_stack_pop(aux), stack->size);
+        int bytes = write(fd, my_stack_pop(aux), aux->size);
         if (bytes < 0)
         {
             perror("Error al escribir datos");
