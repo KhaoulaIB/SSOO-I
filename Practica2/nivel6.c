@@ -664,9 +664,7 @@ int internal_fg(char **args){
 
 /*!*****************************************************************************
  * @brief Manejador propio para la señal SIGINT (Ctrl+C) 
- *Si es un comando externo lo ejecuta un proceso hijo.
- *@param line : linea a ejecutar
- *@return 0
+ *@param signum : numero de señal
  *******************************************************************************/
 
 
