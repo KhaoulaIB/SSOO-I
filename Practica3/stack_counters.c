@@ -202,7 +202,7 @@ void *worker(void *ptr){
         exit(EXIT_FAILURE);
     }
     for (int i = 0; i<N; i++){
-     //primer sección crítica   
+     //primera sección crítica   
     pthread_mutex_lock(&mutex); 
    // printf("Soy el hilo %ld ejecutando pop\n",pthread_self());
    int *valor = my_stack_pop(pila);
