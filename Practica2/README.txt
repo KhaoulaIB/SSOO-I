@@ -21,4 +21,4 @@ Sin embargo, debido a restricciones de tiempo, esta funcionalidad no ha sido des
  Se deja abierta la posibilidad de considerar su implementación en futuras iteraciones cercanas.
 
 
-Restricciones
+Restricciones: ningúna
